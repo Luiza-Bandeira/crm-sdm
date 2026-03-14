@@ -1,0 +1,12 @@
+{
+  "name": "crm-sdm",
+  "version": "1.0.0",
+  "description": "Stack: Supabase Edge Functions + OpenAI GPT-4o + Evolution API (WhatsApp)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
