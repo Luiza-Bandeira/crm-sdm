@@ -13,17 +13,28 @@ import { generateAgentReply }                 from '../_shared/agent.ts';
 import { STAGES, STAGE_NAMES }               from '../_shared/stages.ts';
 import { getAudioBase64, transcribeAudio }    from '../_shared/audio.ts';
 
-const LUIZA_ID = '306215b6-2442-4ea2-aaff-d4c94a61639b';
+
 
 serve(async (req) => {
+  console.log(`[webhook-whatsapp] Request: ${req.method} ${req.url}`);
   // Evolution sempre espera 200 — nunca retornamos erro para ela
   if (req.method !== 'POST') return new Response('ok', { status: 200 });
 
   try {
-    const event = await req.json();
+    const rawBody = await req.text();
+    console.log('[webhook-whatsapp] Raw Body:', rawBody);
+    
+    let event;
+    try {
+      event = JSON.parse(rawBody);
+    } catch (e) {
+      console.error('[webhook-whatsapp] Falha ao parsear JSON:', e.message);
+      return new Response('ok', { status: 200 });
+    }
 
     // Filtra apenas mensagens enviadas (upsert)
-    if (event.event !== 'messages.upsert') {
+    if (event.event !== 'messages.upsert' && event.event !== 'MESSAGES_UPSERT') {
+      console.log('[webhook-whatsapp] Ignorando evento não suportado:', event.event);
       return new Response('ok', { status: 200 });
     }
 
@@ -44,7 +55,7 @@ serve(async (req) => {
     
     if (audioMsg && messageId && phone) {
       console.log(`[whatsapp] Áudio detectado de ${phone}`);
-      await saveMessage(LUIZA_ID, 'user', `[DEBUG] Processando seu áudio (aguardando sincronização)...`);
+      // Notifica no console, mas não podemos salvar mensagem se ainda não buscamos o lead
       
       // Processa áudio em background
       (async () => {
@@ -57,12 +68,11 @@ serve(async (req) => {
               console.log(`[transcription] ${phone}: ${text}`);
               await processMessage(phone, `[Áudio]: ${text}`);
             } else {
-              await saveMessage(LUIZA_ID, 'assistant', `[ERROR] Não consegui transcrever o áudio.`);
+              console.error(`[audio] ${phone}: Não consegui transcrever o áudio.`);
             }
           }
         } catch (e: any) {
           console.error('[audio] Erro no processamento:', e);
-          await saveMessage(LUIZA_ID, 'assistant', `[ERROR FATAL] ${e.message}`);
         }
       })().catch(err => console.error('[audio] Erro não capturado:', err));
 

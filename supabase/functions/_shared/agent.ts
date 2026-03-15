@@ -329,7 +329,7 @@ export async function generateAgentReply(
 
     try {
       // Remove possíveis \`\`\`json fences antes de parsear
-      const clean = rawText.replace(/(\`\`\`json|\`\`\`)/g, '').trim();
+      const clean = rawText.replace(/(```json|```)/g, '').trim();
       parsed = JSON.parse(clean);
     } catch {
       parsed = { reply: rawText };
@@ -338,7 +338,7 @@ export async function generateAgentReply(
     const score     = Number(parsed.score ?? 0);
     const phase     = String(parsed.phase ?? state.spin_phase);
     const nextStage = (parsed.next_stage as number | null) ?? phaseToStage(phase, score);
-    const notes     = String(parsed.notes ?? (lead.name ? \`Lead ativo: \${lead.name}\` : ''));
+    const notes     = String(parsed.notes ?? (lead.name ? `Lead ativo: ${lead.name}` : ''));
 
     return {
       reply:    String(parsed.reply ?? ''),
@@ -351,7 +351,7 @@ export async function generateAgentReply(
   } catch (error: any) {
     console.error('[generateAgentReply] Erro fatal:', error);
     return {
-      reply:    \`[Erro de IA: \${error.message.substring(0, 100)}...]\`,
+      reply:    `[Erro de IA: ${error.message.substring(0, 100)}...]`,
       newPhase: state.spin_phase,
       spinData: (state.spin_data as Record<string, unknown>) ?? {},
       score:    lead.score || 0,
