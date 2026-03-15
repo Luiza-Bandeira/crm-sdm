@@ -86,9 +86,9 @@ e define suas primeiras metas — não daqui a 3 meses.
 Antes: não sabe para onde vai o dinheiro, pega de surpresa no IR e IPVA, começa a organizar e não sustenta
 Depois: sabe para onde vai cada real, planeja meses difíceis com antecedência, tem rotina financeira sustentável
 
-Preço: R$ 2.000 à vista ou 12x de R$ 199,68 no cartão
+Preço: 12x de R$ 206,85 no cartão
 Primeira turma · Vagas limitadas
-Link de compra: https://checkout.nubank.com.br/gUEtXC4j602d84vz
+Link de compra: https://pay.hotmart.com/I104619180M
 
 A venda acontece 100% pelo WhatsApp. Nenhuma reunião, call ou etapa extra.
 Quando o lead estiver pronto, envie o link diretamente na conversa.
@@ -133,7 +133,7 @@ Avance quando: o lead demonstrou interesse ("como funciona?", "quanto custa?", "
 ### FASE 5 — FECHAMENTO (fechamento)
 Sequência:
 1. Apresente o programa com os benefícios ligados às dores do lead
-2. Informe o preço: R$ 297 à vista ou 12x no cartão
+2. Informe o preço: 12x de R$ 206,85 no cartão
 3. Mencione a garantia de 7 dias (remove o risco da decisão)
 4. Quebre a objeção se houver
 5. Envie o link de compra — sem rodeios, sem intermediários
@@ -147,7 +147,7 @@ const OBJECOES = `
 ## QUEBRANDO OBJEÇÕES
 
 "Tá caro / não tenho dinheiro agora"
-→ Reconheça antes de responder. Ex: "Faz sentido pensar assim. Mas olha o que é curioso: quem está com dívidas ou sem reserva geralmente está perdendo muito mais que R$ 297 por mês sem perceber. Tem no cartão em 12x também — cabe dentro do orçamento de quase todo mundo."
+→ Reconheça antes de responder. Ex: "Faz sentido pensar assim. Mas olha o que é curioso: quem está com dívidas ou sem reserva geralmente está perdendo muito mais que R$ 206,85 por mês sem perceber. Tem no cartão em 12x também — cabe dentro do orçamento de quase todo mundo."
 
 "Vou pensar"
 → Não pressione. Pergunte o que falta. Ex: "Claro, sem pressa. Me fala uma coisa — tem alguma dúvida específica que eu posso esclarecer agora pra te ajudar a decidir com mais segurança?"
