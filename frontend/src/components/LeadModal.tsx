@@ -12,11 +12,18 @@ interface Props {
 }
 
 export default function LeadModal({ lead, stages, onClose, onUpdate, onDelete }: Props) {
+  const isNew = !lead.id
   const [conversations, setConversations] = useState<Conversation[]>([])
-  const [editing, setEditing] = useState(false)
-  const [form, setForm] = useState({ name: lead.name || '', notes: lead.notes || '', stage_id: lead.stage_id })
+  const [editing, setEditing] = useState(isNew)
+  const [form, setForm] = useState({ 
+    name: lead.name || '', 
+    phone: lead.phone || '',
+    notes: lead.notes || '', 
+    stage_id: lead.stage_id 
+  })
   const [saving, setSaving] = useState(false)
   const [tab, setTab] = useState<'info' | 'chat'>('info')
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   const loadConversations = useCallback(async () => {
     const { data } = await supabase
@@ -32,25 +39,54 @@ export default function LeadModal({ lead, stages, onClose, onUpdate, onDelete }:
   }, [loadConversations])
 
   async function handleSave() {
+    if (!form.phone) return alert('O telefone é obrigatório.')
+    
     setSaving(true)
-    const { data, error } = await supabase
-      .from('leads')
-      .update({ name: form.name, notes: form.notes, stage_id: form.stage_id })
-      .eq('id', lead.id)
-      .select('*, agent_state(*)')
-      .single()
+    let res
+    if (isNew) {
+      res = await supabase
+        .from('leads')
+        .insert({ name: form.name, phone: form.phone, notes: form.notes, stage_id: form.stage_id })
+        .select('*, agent_state(*)')
+        .single()
+    } else {
+      res = await supabase
+        .from('leads')
+        .update({ name: form.name, phone: form.phone, notes: form.notes, stage_id: form.stage_id })
+        .eq('id', lead.id)
+        .select('*, agent_state(*)')
+        .single()
+    }
+    
     setSaving(false)
-    if (!error && data) {
-      onUpdate({ ...lead, ...data })
+    if (res.error) {
+      alert('Erro ao salvar lead: ' + res.error.message)
+    } else if (res.data) {
+      onUpdate({ ...lead, ...res.data })
       setEditing(false)
+      if (isNew) onClose()
     }
   }
 
   async function handleDelete() {
-    if (!confirm('Excluir este lead? Esta ação é irreversível.')) return
-    await supabase.from('leads').delete().eq('id', lead.id)
-    onDelete(lead.id)
-    onClose()
+    if (isNew) return onClose()
+    
+    if (!confirmingDelete) {
+      setConfirmingDelete(true)
+      return
+    }
+    
+    setSaving(true)
+    const { error } = await supabase.from('leads').delete().eq('id', lead.id)
+    setSaving(false)
+    
+    if (error) {
+      alert('Erro ao excluir lead: ' + error.message)
+      setConfirmingDelete(false)
+    } else {
+      onDelete(lead.id)
+      onClose()
+    }
   }
 
   function timeFormat(iso: string) {
@@ -67,11 +103,16 @@ export default function LeadModal({ lead, stages, onClose, onUpdate, onDelete }:
           </div>
           <div className="modal-title-area">
             {editing ? (
-              <input value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} placeholder="Nome do lead" />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <input value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} placeholder="Nome do lead" />
+                <input value={form.phone} onChange={e => setForm(f => ({...f, phone: e.target.value}))} placeholder="Telefone (ex: 5511999999999)" />
+              </div>
             ) : (
-              <h2 className="modal-name">{lead.name || 'Sem nome'}</h2>
+              <>
+                <h2 className="modal-name">{lead.name || 'Sem nome'}</h2>
+                <div className="modal-phone"><Phone size={12} />{lead.phone}</div>
+              </>
             )}
-            <div className="modal-phone"><Phone size={12} />{lead.phone}</div>
           </div>
           <div className="modal-actions-top">
             {!editing ? (
@@ -81,7 +122,37 @@ export default function LeadModal({ lead, stages, onClose, onUpdate, onDelete }:
                 <Save size={13} />{saving ? 'Salvando...' : 'Salvar'}
               </button>
             )}
-            <button className="btn btn-danger" onClick={handleDelete}><Trash2 size={13} /></button>
+            {confirmingDelete ? (
+              <div style={{ display: 'flex', gap: '4px' }}>
+                <button 
+                  type="button" 
+                  className="btn btn-danger" 
+                  onClick={handleDelete}
+                  disabled={saving}
+                  style={{ padding: '8px 12px', fontSize: '11px' }}
+                >
+                  {saving ? 'Excluindo...' : 'Confirmar?'}
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-ghost" 
+                  onClick={() => setConfirmingDelete(false)}
+                  style={{ padding: '8px 12px', fontSize: '11px' }}
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <button 
+                type="button" 
+                className="btn btn-danger" 
+                onClick={handleDelete} 
+                title="Excluir Lead"
+                style={{ padding: '8px 12px' }}
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
             <button className="btn btn-ghost icon-only" onClick={onClose}><X size={16} /></button>
           </div>
         </div>
@@ -127,12 +198,21 @@ export default function LeadModal({ lead, stages, onClose, onUpdate, onDelete }:
               {/* Notas do Agente e Humanas */}
               <div className="field-group">
                 <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  Anotações da Inteligência Artificial
-                  <span style={{ fontSize: '10px', background: 'var(--purple-dim)', color: 'var(--purple)', padding: '2px 6px', borderRadius: '4px' }}>Automático</span>
+                  Anotações
+                  {!editing && <span style={{ fontSize: '10px', background: 'var(--purple-dim)', color: 'var(--purple)', padding: '2px 6px', borderRadius: '4px' }}>Automático</span>}
                 </label>
-                <div style={{ background: 'var(--bg-hover)', padding: '12px', borderRadius: 'var(--radius-md)', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5', whiteSpace: 'pre-wrap', border: '1px solid var(--border)' }}>
-                  {form.notes || <span style={{ opacity: 0.5 }}>O agente ainda não gerou notas para este lead.</span>}
-                </div>
+                {editing ? (
+                  <textarea 
+                    value={form.notes} 
+                    onChange={e => setForm(f => ({...f, notes: e.target.value}))} 
+                    placeholder="Adicione observações sobre este lead..."
+                    style={{ minHeight: '100px', resize: 'vertical' }}
+                  />
+                ) : (
+                  <div style={{ background: 'var(--bg-hover)', padding: '12px', borderRadius: 'var(--radius-md)', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5', whiteSpace: 'pre-wrap', border: '1px solid var(--border)' }}>
+                    {form.notes || <span style={{ opacity: 0.5 }}>Sem anotações no momento.</span>}
+                  </div>
+                )}
               </div>
 
               {/* Meta */}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { RefreshCw, Search, Zap, LayoutDashboard, Columns } from 'lucide-react'
+import { RefreshCw, Search, Zap, LayoutDashboard, Columns, Plus } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Lead, PipelineStage } from '../lib/supabase'
 import KpiHeader from '../components/KpiHeader'
@@ -60,7 +60,14 @@ export default function Dashboard() {
 
   function handleLeadUpdate(updated: Lead) {
     const enriched = { ...updated, stage_color: STAGES_COLORS[updated.stage_id] || '#6366f1' }
-    setLeads(prev => prev.map(l => l.id === updated.id ? enriched : l))
+    setLeads(prev => {
+      const exists = prev.some(l => l.id === updated.id)
+      if (exists) {
+        return prev.map(l => l.id === updated.id ? enriched : l)
+      } else {
+        return [enriched, ...prev]
+      }
+    })
     if (selectedLead?.id === updated.id) setSelectedLead(enriched)
   }
 
@@ -116,6 +123,14 @@ export default function Dashboard() {
               style={{ width: '200px' }}
             />
           </div>
+          <button 
+            className="btn btn-primary" 
+            style={{ marginRight: '12px' }}
+            onClick={() => setSelectedLead({ id: '', phone: '', stage_id: 1, score: 0, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as Lead)}
+          >
+            <Plus size={16} />
+            Novo Lead
+          </button>
           <span className="last-updated">sincronizado às {lastUpdatedStr}</span>
           <button className={`btn btn-ghost refresh-btn ${refreshing ? 'spinning' : ''}`} onClick={() => loadData(true)}>
             <RefreshCw size={14} />
