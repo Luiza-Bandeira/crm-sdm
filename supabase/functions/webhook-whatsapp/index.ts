@@ -46,29 +46,28 @@ serve(async (req) => {
     // Ignora mensagens enviadas por nós mesmos
     if (dataObj.key.fromMe) return new Response('ok', { status: 200 });
 
-    const phone = dataObj.key.remoteJid?.replace('@s.whatsapp.net', '');
+    const jid   = dataObj.key.remoteJid;
     const msg   = dataObj.message;
     const messageId = dataObj.key.id;
 
     // Detecta se é áudio
     const audioMsg = msg?.audioMessage;
     
-    if (audioMsg && messageId && phone) {
-      console.log(`[whatsapp] Áudio detectado de ${phone}`);
-      // Notifica no console, mas não podemos salvar mensagem se ainda não buscamos o lead
+    if (audioMsg && messageId && jid) {
+      console.log(`[whatsapp] Áudio detectado de ${jid}`);
       
       // Processa áudio em background
       (async () => {
         try {
           await new Promise(resolve => setTimeout(resolve, 2000));
-          const base64 = await getAudioBase64(messageId, phone);
+          const base64 = await getAudioBase64(messageId, jid);
           if (base64) {
             const text = await transcribeAudio(base64);
             if (text) {
-              console.log(`[transcription] ${phone}: ${text}`);
-              await processMessage(phone, `[Áudio]: ${text}`);
+              console.log(`[transcription] ${jid}: ${text}`);
+              await processMessage(jid, `[Áudio]: ${text}`);
             } else {
-              console.error(`[audio] ${phone}: Não consegui transcrever o áudio.`);
+              console.error(`[audio] ${jid}: Não consegui transcrever o áudio.`);
             }
           }
         } catch (e: any) {
@@ -85,10 +84,10 @@ serve(async (req) => {
       msg?.extendedTextMessage?.text ||
       msg?.imageMessage?.caption;
 
-    if (!phone || !text) return new Response('ok', { status: 200 });
+    if (!jid || !text) return new Response('ok', { status: 200 });
 
     // Processa mensagem de texto padrão
-    processMessage(phone, text).catch(err =>
+    processMessage(jid, text).catch(err =>
       console.error('[webhook-whatsapp] Erro no processamento:', err)
     );
 
@@ -103,20 +102,40 @@ serve(async (req) => {
 // ============================================================
 // CORE — Processa mensagem recebida
 // ============================================================
-async function processMessage(phone: string, userText: string) {
-  // ── Busca ou cria lead ──────────────────────────────────
+async function processMessage(jid: string, userText: string) {
+  // ── Busca lead por JID ou número numérico ──────────────────
+  // 1. Tenta match exato do identificador (JID completo)
   let { data: lead } = await supabase
     .from('leads')
     .select('*, agent_state(*)')
-    .eq('phone', phone)
+    .eq('phone', jid)
     .maybeSingle();
+
+  // 2. Se não achou, tenta extrair apenas dígitos e buscar (para leads da landing page ainda não vinculados)
+  if (!lead) {
+    const numeric = jid.replace(/\D/g, '');
+    if (numeric.length >= 10) {
+      const { data: leadByNumbers } = await supabase
+        .from('leads')
+        .select('*, agent_state(*)')
+        .eq('phone', numeric)
+        .maybeSingle();
+      
+      if (leadByNumbers) {
+        lead = leadByNumbers;
+        // Vincula o JID oficial para futuras mensagens
+        console.log(`[whatsapp] Vinculando JID ${jid} ao lead numérico ${numeric}`);
+        await supabase.from('leads').update({ phone: jid }).eq('id', lead.id);
+      }
+    }
+  }
 
   if (!lead) {
     // Lead novo — veio direto pelo WhatsApp (sem passar pela landing page)
     const { data: newLead } = await supabase
       .from('leads')
       .insert({
-        phone,
+        phone:    jid,
         source:   'whatsapp_inbound',
         stage_id: STAGES.NOVO_LEAD,
       })
@@ -127,6 +146,7 @@ async function processMessage(phone: string, userText: string) {
       lead_id:    newLead!.id,
       spin_phase: 'situacao',
       spin_data:  {},
+      follow_up_count: 0 // Começa em 0 porque nunca falamos com ele
     });
 
     await logActivity(newLead!.id, 'stage_change', 'Lead criado via WhatsApp direto', null, STAGES.NOVO_LEAD);
@@ -137,7 +157,7 @@ async function processMessage(phone: string, userText: string) {
       agent_state: [{ spin_phase: 'situacao', spin_data: {}, follow_up_count: 0 }],
     };
 
-    console.log(`[whatsapp] Novo lead criado via WhatsApp direto: ${phone}`);
+    console.log(`[whatsapp] Novo lead criado via WhatsApp direto: ${jid}`);
   }
 
   const leadId     = lead.id;
@@ -195,12 +215,12 @@ async function processMessage(phone: string, userText: string) {
       nextStage
     );
 
-    console.log(`[pipeline] ${phone}: ${STAGE_NAMES[oldStage]} → ${STAGE_NAMES[nextStage]}`);
+    console.log(`[pipeline] ${jid}: ${STAGE_NAMES[oldStage]} → ${STAGE_NAMES[nextStage]}`);
   } else {
     // Só atualiza score e notes
     await supabase.from('leads').update({ score, notes: notes || lead.notes }).eq('id', leadId);
   }
 
   // ── Envia resposta pelo WhatsApp ────────────────────────
-  await sendWhatsApp(phone, reply);
+  await sendWhatsApp(jid, reply);
 }

@@ -113,9 +113,25 @@ async function triggerFirstMessage(leadId: string, phone: string, name?: string)
     `Me conta: *como estão suas finanças hoje?* Você consegue guardar dinheiro no final do mês?`;
 
   await saveMessage(leadId, 'assistant', msg);
+  
+  // Envia e pega o JID real (pode ser um @lid ou @s.whatsapp.net)
+  const officialJid = await sendWhatsApp(phone, msg);
+
+  // Atualiza estado do agente: já conta como 1 mensagem enviada
+  // E atualiza o "phone" para o JID real se for diferente, para garantir o match no webhook
+  const updates: any = { 
+    last_message_at: new Date().toISOString(),
+    follow_up_count: 1
+  };
+  
   await supabase.from('agent_state')
-    .update({ last_message_at: new Date().toISOString() })
+    .update(updates)
     .eq('lead_id', leadId);
 
-  await sendWhatsApp(phone, msg);
+  if (officialJid && officialJid !== phone) {
+    console.log(`[webhook-lead] Atualizando telefone para JID oficial: ${phone} -> ${officialJid}`);
+    await supabase.from('leads')
+      .update({ phone: officialJid })
+      .eq('id', leadId);
+  }
 }

@@ -12,7 +12,11 @@ export async function sendWhatsApp(phone: string, text: string) {
     body: JSON.stringify({ number: phone, text }),
   });
 
+  const data = await res.json();
+
   if (!res.ok) {
-    console.error('[evolution] falha ao enviar:', await res.text());
+    console.error('[evolution] falha ao enviar:', JSON.stringify(data));
   }
+  
+  return data?.key?.remoteJid || null;
 }
