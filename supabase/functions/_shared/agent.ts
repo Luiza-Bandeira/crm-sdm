@@ -16,6 +16,7 @@ export interface Lead {
   phone: string;
   stage_id: number;
   score?: number;
+  notes?: string;
 }
 
 export interface AgentResult {
@@ -24,6 +25,7 @@ export interface AgentResult {
   spinData: Record<string, unknown>;
   score: number;
   nextStage: number | null;
+  notes: string;
 }
 
 // ── Skill: SPIN Selling ──────────────────────────────────────
@@ -118,18 +120,19 @@ Formato:
 - Quebre o texto em linhas — não mande blocos
 - Nunca mande tudo de uma vez — construa a conversa
 
-Tom:
+Tom e Ortografia:
 - Empático e humano, não robótico
-- Caloroso como um amigo que entende de finanças
+- Calorosa como uma amiga que entende de finanças
 - Nunca pressione — guie
 - Use o nome do lead quando tiver
+- OBRIGATÓRIO: Escreva sempre em Português do Brasil com ortografia, acentuação e pontuação corretas e completas (ex: "não", "você", "está", "então", "incrível"). Não abrevie palavras erradamente e mantenha a gramática impecável.
 `;
 
 // ── Build System Prompt ──────────────────────────────────────
 function buildSystemPrompt(state: AgentState, lead: Lead): string {
   const nome = lead.name ? `O nome do lead é ${lead.name}.` : 'Ainda não sabemos o nome do lead — pergunte naturalmente no início.';
 
-  return `Você é um consultor especialista em educação financeira e vendas do programa "Seu Dinheiro na Mesa". Você atende pelo WhatsApp.
+  return `Você é a Laura, uma consultora comercial especialista em educação financeira e vendas do programa "Seu Dinheiro na Mesa". Você atende pelo WhatsApp.
 
 ${nome}
 Fase SPIN atual: ${state.spin_phase}
@@ -175,7 +178,8 @@ Regras:
   "phase": "situacao|problema|implicacao|necessidade|fechamento",
   "next_stage": 2,
   "spin_data": { "dor_principal": "...", "nome": "..." },
-  "score": 0
+  "score": 0,
+  "notes": "Resumo das dores, perfil psicológico e histórico financeiro do lead. Atualize sempre com as novas informações vitais para a venda."
 }
 
 Score:
@@ -207,39 +211,59 @@ export async function generateAgentReply(
     ...history.map(h => ({ role: h.role, content: h.content })),
   ];
 
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${OPENAI_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages,
-      temperature: 0.7,
-      max_tokens: 600,
-      response_format: { type: 'json_object' },
-    }),
-  });
-
-  const data = await res.json();
-  let parsed: Record<string, unknown>;
-
   try {
-    parsed = JSON.parse(data.choices[0].message.content);
-  } catch {
-    parsed = { reply: data.choices[0].message.content };
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages,
+        temperature: 0.7,
+        max_tokens: 600,
+        response_format: { type: 'json_object' },
+      }),
+    });
+
+    const data = await res.json();
+    
+    if (!data.choices || data.choices.length === 0) {
+      console.error('[OpenAI Error]', JSON.stringify(data));
+      throw new Error(`OpenAI Error: ${JSON.stringify(data)}`);
+    }
+
+    let parsed: Record<string, unknown>;
+
+    try {
+      parsed = JSON.parse(data.choices[0].message.content);
+    } catch {
+      parsed = { reply: data.choices[0].message.content };
+    }
+
+    const score     = Number(parsed.score ?? 0);
+    const phase     = String(parsed.phase ?? state.spin_phase);
+    const nextStage = (parsed.next_stage as number | null) ?? phaseToStage(phase, score);
+    const notes     = String(parsed.notes ?? (lead.name ? `Lead ativo: ${lead.name}` : ''));
+
+    return {
+      reply:     String(parsed.reply ?? ''),
+      newPhase:  phase,
+      spinData:  (parsed.spin_data as Record<string, unknown>) ?? {},
+      score,
+      nextStage,
+      notes
+    };
+  } catch (error: any) {
+    console.error('[generateAgentReply] Erro fatal:', error);
+    return {
+      reply: `[Erro de IA: ${error.message.substring(0, 100)}...]`,
+      newPhase: state.spin_phase,
+      spinData: (state.spin_data as Record<string, unknown>) ?? {},
+      score: lead.score || 0,
+      nextStage: lead.stage_id,
+      notes: lead.notes || ''
+    };
   }
-
-  const score     = Number(parsed.score ?? 0);
-  const phase     = String(parsed.phase ?? state.spin_phase);
-  const nextStage = (parsed.next_stage as number | null) ?? phaseToStage(phase, score);
-
-  return {
-    reply:     String(parsed.reply ?? ''),
-    newPhase:  phase,
-    spinData:  (parsed.spin_data as Record<string, unknown>) ?? {},
-    score,
-    nextStage,
-  };
 }

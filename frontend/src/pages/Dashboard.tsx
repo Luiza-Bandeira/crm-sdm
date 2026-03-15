@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
-import { RefreshCw, Search, LogOut, Zap } from 'lucide-react'
+import { RefreshCw, Search, Zap, LayoutDashboard, Columns } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Lead, PipelineStage } from '../lib/supabase'
 import KpiHeader from '../components/KpiHeader'
 import KanbanBoard from '../components/KanbanBoard'
 import LeadModal from '../components/LeadModal'
+import MetricsView from '../components/MetricsView'
 
 const STAGES_COLORS: Record<number, string> = {
   1: '#94a3b8', 2: '#3b82f6', 3: '#f59e0b', 4: '#8b5cf6',
@@ -12,6 +13,7 @@ const STAGES_COLORS: Record<number, string> = {
 }
 
 export default function Dashboard() {
+  const [activeTab, setActiveTab] = useState<'metrics' | 'pipeline'>('metrics')
   const [leads, setLeads] = useState<Lead[]>([])
   const [stages, setStages] = useState<PipelineStage[]>([])
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
@@ -80,49 +82,82 @@ export default function Dashboard() {
       {/* Top Bar */}
       <header className="topbar glass">
         <div className="topbar-left">
-          <div className="topbar-logo">
-            <Zap size={18} color="var(--accent)" />
-            <span>CRM <strong>Seu Dinheiro na Mesa</strong></span>
+          <div className="topbar-logo" style={{ marginRight: '24px' }}>
+            <Zap size={22} color="var(--accent)" fill="var(--accent)" />
+            <span style={{ fontSize: '16px' }}><strong>Laura</strong> CRM</span>
           </div>
-          <div className="search-wrap">
+          
+          <nav className="tabs-nav">
+            <button 
+              className={`tab-item ${activeTab === 'metrics' ? 'active' : ''}`}
+              onClick={() => setActiveTab('metrics')}
+            >
+              <LayoutDashboard size={16} />
+              Dashboard
+            </button>
+            <button 
+              className={`tab-item ${activeTab === 'pipeline' ? 'active' : ''}`}
+              onClick={() => setActiveTab('pipeline')}
+            >
+              <Columns size={16} />
+              Pipeline
+            </button>
+          </nav>
+        </div>
+
+        <div className="topbar-right">
+          <div className="search-wrap" style={{ marginRight: '16px' }}>
             <Search size={14} className="search-icon" />
             <input
               className="search-input"
-              placeholder="Buscar lead por nome ou telefone..."
+              placeholder="Buscar lead..."
               value={search}
               onChange={e => setSearch(e.target.value)}
+              style={{ width: '200px' }}
             />
           </div>
-        </div>
-        <div className="topbar-right">
-          <span className="last-updated">atualizado às {lastUpdatedStr}</span>
+          <span className="last-updated">sincronizado às {lastUpdatedStr}</span>
           <button className={`btn btn-ghost refresh-btn ${refreshing ? 'spinning' : ''}`} onClick={() => loadData(true)}>
-            <RefreshCw size={14} />Atualizar
+            <RefreshCw size={14} />
           </button>
         </div>
       </header>
 
-      {/* KPIs */}
-      <div className="dashboard-kpis">
-        <KpiHeader leads={filteredLeads} />
-      </div>
-
-      {/* Kanban */}
-      <div className="dashboard-board">
+      {/* Main Content Area */}
+      <main className="dashboard-content" style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
         {loading ? (
           <div className="loading-state">
             <div className="spinner" />
-            <span>Carregando leads...</span>
+            <span>Consultando dados da Laura...</span>
           </div>
         ) : (
-          <KanbanBoard
-            stages={stages}
-            leads={filteredLeads}
-            onLeadClick={setSelectedLead}
-            onStageChange={handleStageChange}
-          />
+          <>
+            {activeTab === 'metrics' ? (
+              <div className="metrics-page animate-fade">
+                <div style={{ marginBottom: '24px' }}>
+                  <h2 style={{ fontSize: '24px', fontWeight: 700 }}>Performance Comercial</h2>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Métricas calculadas em tempo real com base no histórico da Laura.</p>
+                </div>
+                <MetricsView leads={leads} />
+              </div>
+            ) : (
+              <div className="pipeline-page animate-fade" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ marginBottom: '16px' }}>
+                  <KpiHeader leads={filteredLeads} />
+                </div>
+                <div style={{ flex: 1, minHeight: 0 }}>
+                  <KanbanBoard
+                    stages={stages}
+                    leads={filteredLeads}
+                    onLeadClick={setSelectedLead}
+                    onStageChange={handleStageChange}
+                  />
+                </div>
+              </div>
+            )}
+          </>
         )}
-      </div>
+      </main>
 
       {/* Lead Modal */}
       {selectedLead && (

@@ -11,6 +11,9 @@ import { supabase, saveMessage, logActivity } from '../_shared/db.ts';
 import { sendWhatsApp }                       from '../_shared/evolution.ts';
 import { generateAgentReply }                 from '../_shared/agent.ts';
 import { STAGES, STAGE_NAMES }               from '../_shared/stages.ts';
+import { getAudioBase64, transcribeAudio }    from '../_shared/audio.ts';
+
+const LUIZA_ID = '306215b6-2442-4ea2-aaff-d4c94a61639b';
 
 serve(async (req) => {
   // Evolution sempre espera 200 — nunca retornamos erro para ela
@@ -19,25 +22,62 @@ serve(async (req) => {
   try {
     const event = await req.json();
 
-    // ── Filtra apenas mensagens de texto recebidas ──────────
-    if (event.event !== 'messages.upsert') return new Response('ok', { status: 200 });
+    // Filtra apenas mensagens enviadas (upsert)
+    if (event.event !== 'messages.upsert') {
+      return new Response('ok', { status: 200 });
+    }
 
-    const msg = event.data?.message;
+    const dataObj = event.data;
+    if (!dataObj || !dataObj.key || !dataObj.message) {
+      return new Response('ok', { status: 200 });
+    }
 
     // Ignora mensagens enviadas por nós mesmos
-    if (!msg || msg.key?.fromMe) return new Response('ok', { status: 200 });
+    if (dataObj.key.fromMe) return new Response('ok', { status: 200 });
 
-    // Extrai telefone e texto
-    const phone = msg.key?.remoteJid?.replace('@s.whatsapp.net', '');
+    const phone = dataObj.key.remoteJid?.replace('@s.whatsapp.net', '');
+    const msg   = dataObj.message;
+    const messageId = dataObj.key.id;
+
+    // Detecta se é áudio
+    const audioMsg = msg?.audioMessage;
+    
+    if (audioMsg && messageId && phone) {
+      console.log(`[whatsapp] Áudio detectado de ${phone}`);
+      await saveMessage(LUIZA_ID, 'user', `[DEBUG] Processando seu áudio (aguardando sincronização)...`);
+      
+      // Processa áudio em background
+      (async () => {
+        try {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          const base64 = await getAudioBase64(messageId, phone);
+          if (base64) {
+            const text = await transcribeAudio(base64);
+            if (text) {
+              console.log(`[transcription] ${phone}: ${text}`);
+              await processMessage(phone, `[Áudio]: ${text}`);
+            } else {
+              await saveMessage(LUIZA_ID, 'assistant', `[ERROR] Não consegui transcrever o áudio.`);
+            }
+          }
+        } catch (e: any) {
+          console.error('[audio] Erro no processamento:', e);
+          await saveMessage(LUIZA_ID, 'assistant', `[ERROR FATAL] ${e.message}`);
+        }
+      })().catch(err => console.error('[audio] Erro não capturado:', err));
+
+      return new Response('ok', { status: 200 });
+    }
+
+    // Extrai texto padrão
     const text  =
-      msg.message?.conversation ||
-      msg.message?.extendedTextMessage?.text ||
-      msg.message?.imageMessage?.caption;
+      msg?.conversation ||
+      msg?.extendedTextMessage?.text ||
+      msg?.imageMessage?.caption;
 
     if (!phone || !text) return new Response('ok', { status: 200 });
 
-    // Processa em background para responder 200 imediatamente
-    // (Evolution tem timeout curto)
+    // Processa mensagem de texto padrão
     processMessage(phone, text).catch(err =>
       console.error('[webhook-whatsapp] Erro no processamento:', err)
     );
@@ -110,7 +150,7 @@ async function processMessage(phone: string, userText: string) {
     .limit(40);
 
   // ── Gera resposta via agente SPIN ───────────────────────
-  const { reply, newPhase, spinData, score, nextStage } =
+  const { reply, newPhase, spinData, score, nextStage, notes } =
     await generateAgentReply(history ?? [], agentState, lead);
 
   // ── Salva resposta do agente ────────────────────────────
@@ -131,10 +171,10 @@ async function processMessage(phone: string, userText: string) {
       .eq('id', leadId);
   }
 
-  // ── Move card no pipeline ───────────────────────────────
+  // ── Move card no pipeline e Salva Anotações ─────────
   if (nextStage && nextStage !== oldStage) {
     await supabase.from('leads')
-      .update({ score, stage_id: nextStage })
+      .update({ score, stage_id: nextStage, notes: notes || lead.notes })
       .eq('id', leadId);
 
     await logActivity(
@@ -147,8 +187,8 @@ async function processMessage(phone: string, userText: string) {
 
     console.log(`[pipeline] ${phone}: ${STAGE_NAMES[oldStage]} → ${STAGE_NAMES[nextStage]}`);
   } else {
-    // Só atualiza score
-    await supabase.from('leads').update({ score }).eq('id', leadId);
+    // Só atualiza score e notes
+    await supabase.from('leads').update({ score, notes: notes || lead.notes }).eq('id', leadId);
   }
 
   // ── Envia resposta pelo WhatsApp ────────────────────────

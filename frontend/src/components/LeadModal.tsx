@@ -124,16 +124,15 @@ export default function LeadModal({ lead, stages, onClose, onUpdate, onDelete }:
                 </div>
               </div>
 
-              {/* Notas */}
+              {/* Notas do Agente e Humanas */}
               <div className="field-group">
-                <label>Anotações</label>
-                <textarea
-                  rows={4}
-                  value={editing ? form.notes : (lead.notes || '')}
-                  disabled={!editing}
-                  onChange={e => setForm(f => ({...f, notes: e.target.value}))}
-                  placeholder="Adicione anotações sobre este lead..."
-                />
+                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  Anotações da Inteligência Artificial
+                  <span style={{ fontSize: '10px', background: 'var(--purple-dim)', color: 'var(--purple)', padding: '2px 6px', borderRadius: '4px' }}>Automático</span>
+                </label>
+                <div style={{ background: 'var(--bg-hover)', padding: '12px', borderRadius: 'var(--radius-md)', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5', whiteSpace: 'pre-wrap', border: '1px solid var(--border)' }}>
+                  {form.notes || <span style={{ opacity: 0.5 }}>O agente ainda não gerou notas para este lead.</span>}
+                </div>
               </div>
 
               {/* Meta */}
