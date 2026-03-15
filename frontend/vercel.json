@@ -1,8 +1,8 @@
 {
+  "redirects": [
+    { "source": "/", "destination": "/crm", "permanent": true }
+  ],
   "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
