@@ -20,7 +20,7 @@ export async function getAudioBase64(messageId: string, phone: string): Promise<
       body: JSON.stringify({ 
         message: { 
           key: {
-            remoteJid: `${phone}@s.whatsapp.net`,
+            remoteJid: phone.includes('@') ? phone : `${phone}@s.whatsapp.net`,
             fromMe: false,
             id: messageId
           }
