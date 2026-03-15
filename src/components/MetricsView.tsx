@@ -28,11 +28,17 @@ export default function MetricsView({ leads }: MetricsViewProps) {
     const sales = leads.filter(l => l.stage_id === 7).length
     const hotLeads = leads.filter(l => (l.score || 0) >= 80).length
     
+    // Fora do horário comercial (Seg-Sex 08:00 - 18:00) + Finais de Semana
     const offHours = leads.filter(l => {
       const date = new Date(l.created_at)
-      const hour = date.getUTCHours() - 3
+      const hour = date.getUTCHours() - 3 // Brasília
       const localHour = hour < 0 ? hour + 24 : hour
-      return localHour >= 18 || localHour < 9
+      const day = date.getDay() // 0 = Domingo, 6 = Sábado
+      
+      const isWeekend = day === 0 || day === 6
+      const isOutsideHours = localHour < 8 || localHour >= 18
+      
+      return isWeekend || isOutsideHours
     }).length
 
     const conversionRate = total > 0 ? ((sales / total) * 100).toFixed(1) : '0'
@@ -61,7 +67,7 @@ export default function MetricsView({ leads }: MetricsViewProps) {
       stats: [
         { label: 'Total de Leads', value: total, icon: Users, color: 'var(--blue)', bg: 'var(--blue-dim)', trend: '+12% este mês' },
         { label: 'Atendimentos Feitos', value: qualified, icon: CheckCircle, color: 'var(--green)', bg: 'var(--green-dim)', trend: 'Taxa de qualificação' },
-        { label: 'Fora do Horário', value: offHours, icon: Clock, color: 'var(--orange)', bg: 'var(--orange-dim)', trend: 'Horário alternativo' },
+        { label: 'Fora do Horário', value: offHours, icon: Clock, color: 'var(--orange)', bg: 'var(--orange-dim)', trend: 'Conversão pós-horário' },
         { label: 'Leads Quentes', value: hotLeads, icon: Zap, color: 'var(--purple)', bg: 'var(--purple-dim)', trend: 'Score > 80' },
         { label: 'Taxa de Conversão', value: `${conversionRate}%`, icon: TrendingUp, color: 'var(--pink)', bg: 'var(--pink-dim)', trend: 'Meta: 5%' }
       ],
