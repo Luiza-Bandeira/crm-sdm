@@ -56,6 +56,12 @@ serve(async (req) => {
       console.log(`[whatsapp] JID normalizado: ${rawJid} → ${jid}`);
     }
 
+    // ── Filtra Grupos e Comunidades ──────────────────────────────────────────
+    if (jid.includes('@g.us') || jid.includes('@broadcast') || jid.includes('newsletter')) {
+      console.log(`[whatsapp] Ignorando mensagem de grupo/comunidade: ${jid}`);
+      return new Response('ok', { status: 200 });
+    }
+
     const audioMsg = msg?.audioMessage;
     
     if (audioMsg && messageId && jid) {
