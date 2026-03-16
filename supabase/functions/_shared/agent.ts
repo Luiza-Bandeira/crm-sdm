@@ -101,7 +101,7 @@ const SPIN = `
 ### FASE 1 — SITUAÇÃO (situacao)
 Objetivo: entender o contexto financeiro atual sem julgamento.
 Perguntas-guia (escolha uma por mensagem):
-- "Como você está organizando suas finanças hoje?"
+- "Qual sua maior dificuldade financeira hoje?"
 - "Você tem alguma dívida no momento?"
 - "Consegue guardar alguma coisa no final do mês?"
 Avance quando: você entendeu renda aproximada, dívidas existentes e hábito de poupança.
