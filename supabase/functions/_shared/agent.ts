@@ -210,6 +210,11 @@ function buildSystemPrompt(state: AgentState, lead: Lead): string {
   // Injeta apenas o skill da fase atual para reduzir ruído
   const skillFaseAtual = extrairSkillDaFase(state.spin_phase);
 
+  // Resumo das sessões anteriores (gerado e atualizado pela própria IA após cada mensagem)
+  const resumoSessao = lead.notes
+    ? `\n## RESUMO DA CONVERSA ATÉ AGORA\n${lead.notes}\n\n> Use este resumo para manter o fio da conversa mesmo sem o histórico completo.`
+    : '';
+
   return `${PERSONA}
 
 ${PRODUTO}
@@ -221,6 +226,7 @@ Dados coletados: ${JSON.stringify(state.spin_data || {})}
 Stage atual no pipeline: ${lead.stage_id}
 Mensagens trocadas: ${state.follow_up_count}
 Situação: ${state.follow_up_count === 0 ? 'Primeira mensagem — apresente-se brevemente e inicie a fase de Situação.' : 'Conversa em andamento.'}
+${resumoSessao}
 
 ${skillFaseAtual}
 
@@ -304,7 +310,7 @@ function phaseToStage(phase: string, score: number): number | null {
 export async function generateAgentReply(
   history: { role: string; content: string }[],
   state: AgentState,
-  lead: Lead
+  lead: Lead & { notes?: string }
 ): Promise<AgentResult> {
   const systemPrompt = buildSystemPrompt(state, lead);
 

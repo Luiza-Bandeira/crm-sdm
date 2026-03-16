@@ -171,13 +171,16 @@ async function processMessage(jid: string, userText: string) {
   // ── Salva mensagem do usuário ───────────────────────────
   await saveMessage(leadId, 'user', userText);
 
-  // ── Busca histórico completo ────────────────────────────
-  const { data: history } = await supabase
+  // ── Busca histórico completo (últimas 40 mensagens) ────────
+  const { data: historyRaw } = await supabase
     .from('conversations')
     .select('role, content')
     .eq('lead_id', leadId)
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })  // mais recentes primeiro
     .limit(40);
+
+  // Inverte para que a ordem no prompt seja cronológica (mais antigas → mais novas)
+  const history = (historyRaw ?? []).reverse();
 
   // ── Gera resposta via agente SPIN ───────────────────────
   const { reply, newPhase, spinData, score, nextStage, notes } =
