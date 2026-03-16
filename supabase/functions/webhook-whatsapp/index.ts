@@ -111,10 +111,13 @@ async function processMessage(jid: string, userText: string) {
     .eq('phone', jid)
     .maybeSingle();
 
-  // 2. Se não achou, tenta extrair apenas dígitos e buscar (para leads da landing page ainda não vinculados)
+  // 2. Se não achou com JID exato, tenta extrair apenas dígitos
+  //    (para leads da landing page ainda não vinculados ao JID)
   if (!lead) {
     const numeric = jid.replace(/\D/g, '');
-    if (numeric.length >= 10) {
+    if (numeric.length >= 10 && !jid.includes('@lid')) {
+      // Só tenta match numérico se NÃO for um @lid
+      // (@lid é um identificador interno do WhatsApp, não um número de telefone)
       const { data: leadByNumbers } = await supabase
         .from('leads')
         .select('*, agent_state(*)')
@@ -123,8 +126,43 @@ async function processMessage(jid: string, userText: string) {
       
       if (leadByNumbers) {
         lead = leadByNumbers;
-        // Vincula o JID oficial para futuras mensagens
         console.log(`[whatsapp] Vinculando JID ${jid} ao lead numérico ${numeric}`);
+        await supabase.from('leads').update({ phone: jid }).eq('id', lead.id);
+      }
+    }
+  }
+
+  // 3. Se o JID é do tipo @lid, procura pelo LID salvo nos metadados
+  //    (este mapeamento é criado quando recebemos a mensagem @s.whatsapp.net depois do @lid)
+  if (!lead && jid.includes('@lid')) {
+    const { data: leadByLid } = await supabase
+      .from('leads')
+      .select('*, agent_state(*)')
+      .contains('metadata', { known_lids: [jid] })
+      .maybeSingle();
+    
+    if (leadByLid) {
+      lead = leadByLid;
+      console.log(`[whatsapp] Lead encontrado via LID metadata: ${jid}`);
+    }
+  }
+
+  // 4. Se ainda não achou e NÃO é @lid, busca se algum lead tem @lid como phone
+  //    e o JID atual pode ser o número real do mesmo usuário
+  if (!lead && !jid.includes('@lid')) {
+    const numeric = jid.replace(/\D/g, '');
+    if (numeric.length >= 10) {
+      // Busca leads cujo metadata contenha um known_number que bata com esse número
+      const { data: leadByNumericMeta } = await supabase
+        .from('leads')
+        .select('*, agent_state(*)')
+        .contains('metadata', { known_numbers: [numeric] })
+        .maybeSingle();
+
+      if (leadByNumericMeta) {
+        lead = leadByNumericMeta;
+        console.log(`[whatsapp] Lead encontrado via known_numbers metadata: ${numeric}`);
+        // Atualiza o phone principal para o JID real (com número)
         await supabase.from('leads').update({ phone: jid }).eq('id', lead.id);
       }
     }
@@ -167,6 +205,18 @@ async function processMessage(jid: string, userText: string) {
     spin_data: {},
     follow_up_count: 0,
   };
+
+  // ── Se identificador é @lid, salva nos metadados para futuros matches ──
+  if (jid.includes('@lid')) {
+    const currentMeta  = lead.metadata || {};
+    const knownLids    = currentMeta.known_lids || [];
+    if (!knownLids.includes(jid)) {
+      await supabase.from('leads')
+        .update({ metadata: { ...currentMeta, known_lids: [...knownLids, jid] } })
+        .eq('id', leadId);
+      console.log(`[whatsapp] LID ${jid} registrado nos metadados do lead ${leadId}`);
+    }
+  }
 
   // ── Salva mensagem do usuário ───────────────────────────
   await saveMessage(leadId, 'user', userText);
