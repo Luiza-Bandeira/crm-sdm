@@ -17,7 +17,6 @@ import { getAudioBase64, transcribeAudio }    from '../_shared/audio.ts';
 
 serve(async (req) => {
   console.log(`[webhook-whatsapp] Request: ${req.method} ${req.url}`);
-  // Evolution sempre espera 200 — nunca retornamos erro para ela
   if (req.method !== 'POST') return new Response('ok', { status: 200 });
 
   try {
@@ -32,7 +31,6 @@ serve(async (req) => {
       return new Response('ok', { status: 200 });
     }
 
-    // Filtra apenas mensagens enviadas (upsert)
     if (event.event !== 'messages.upsert' && event.event !== 'MESSAGES_UPSERT') {
       console.log('[webhook-whatsapp] Ignorando evento não suportado:', event.event);
       return new Response('ok', { status: 200 });
@@ -43,20 +41,25 @@ serve(async (req) => {
       return new Response('ok', { status: 200 });
     }
 
-    // Ignora mensagens enviadas por nós mesmos
     if (dataObj.key.fromMe) return new Response('ok', { status: 200 });
 
-    const jid   = dataObj.key.remoteJid;
-    const msg   = dataObj.message;
+    const rawJid   = dataObj.key.remoteJid;
+    const msg      = dataObj.message;
     const messageId = dataObj.key.id;
 
-    // Detecta se é áudio
+    // ── Normaliza @lid → @s.whatsapp.net ─────────────────────────────────────
+    // A Evolution API pode enviar @lid em vez do número real quando o WhatsApp
+    // usa o novo sistema de privacidade LID. Tentamos recuperar o número real
+    // de outros campos do payload antes de processar.
+    const jid = normalizeJid(rawJid, event, dataObj);
+    if (rawJid !== jid) {
+      console.log(`[whatsapp] JID normalizado: ${rawJid} → ${jid}`);
+    }
+
     const audioMsg = msg?.audioMessage;
     
     if (audioMsg && messageId && jid) {
       console.log(`[whatsapp] Áudio detectado de ${jid}`);
-      
-      // Processa áudio em background
       (async () => {
         try {
           await new Promise(resolve => setTimeout(resolve, 2000));
@@ -74,19 +77,16 @@ serve(async (req) => {
           console.error('[audio] Erro no processamento:', e);
         }
       })().catch(err => console.error('[audio] Erro não capturado:', err));
-
       return new Response('ok', { status: 200 });
     }
 
-    // Extrai texto padrão
-    const text  =
+    const text =
       msg?.conversation ||
       msg?.extendedTextMessage?.text ||
       msg?.imageMessage?.caption;
 
     if (!jid || !text) return new Response('ok', { status: 200 });
 
-    // Processa mensagem de texto padrão
     processMessage(jid, text).catch(err =>
       console.error('[webhook-whatsapp] Erro no processamento:', err)
     );
@@ -98,6 +98,34 @@ serve(async (req) => {
     return new Response('ok', { status: 200 });
   }
 });
+
+// ============================================================
+// NORMALIZA JID — converte @lid para @s.whatsapp.net quando possível
+// A Evolution inclui o número real em campos como: sender, participant,
+// phoneNumber, contact.id, ou remoteJid de outros eventos.
+// ============================================================
+function normalizeJid(rawJid: string, event: any, dataObj: any): string {
+  if (!rawJid || !rawJid.includes('@lid')) return rawJid; // não é @lid, retorna como está
+
+  // Candidatos de campos que podem conter o número real em formato @s.whatsapp.net
+  const candidates: any[] = [
+    event?.sender,                          // campo sender no nível do evento
+    dataObj?.sender,                        // campo sender no data
+    dataObj?.participant,                   // em grupos, o participant tem o número real
+    dataObj?.phoneNumber,                   // algumas versões da Evolution
+    dataObj?.contact?.id,                   // campo de contato
+    dataObj?.key?.participant,              // participant dentro da key
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.includes('@s.whatsapp.net')) {
+      return candidate;
+    }
+  }
+
+  // Nenhum campo com @s.whatsapp.net encontrado — loga para diagnóstico
+  return rawJid; // retorna @lid original como fallback
+}
 
 // ============================================================
 // CORE — Processa mensagem recebida
