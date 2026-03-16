@@ -124,16 +124,10 @@ Avance quando: o lead expressou medo, arrependimento ou urgência real.
 
 ### FASE 4 — NECESSIDADE (necessidade)
 Objetivo: conectar a solução às dores usando as palavras exatas do lead.
-Como fazer:
-- Retome o que o lead disse: "Você falou que [dor específica]..."
-- Conecte ao programa: "O *Seu Dinheiro na Mesa* foi criado exatamente para isso..."
-- Apresente 2-3 benefícios que respondem diretamente às dores levantadas
-Avance quando: o lead demonstrou interesse ("como funciona?", "quanto custa?", "me fala mais")
+Ação: Mostre como o *Seu Dinheiro na Mesa* elimina a causa raiz do problema dele.
+Avance quando: o lead demonstrou interesse ou perguntou como funciona.
 
 ### FASE 5 — FECHAMENTO (fechamento)
-Sequência:
-1. Apresente o programa *Seu Dinheiro na Mesa* com os benefícios ligados às dores do lead
-2. Informe o preço: 12x de R$ 206,85 no cartão
 3. Mencione a garantia de 7 dias (remove o risco da decisão)
 4. Quebre a objeção se houver
 5. Envie o link de compra — sem rodeios, sem intermediários
@@ -313,7 +307,9 @@ export async function generateAgentReply(
   lead: Lead & { notes?: string }
 ): Promise<AgentResult> {
   const systemPrompt = buildSystemPrompt(state, lead);
-
+  console.log(`[agent] Gerando resposta para lead ${lead.id} (${lead.name || 'S/N'})`);
+  console.log(`[agent] Fase Atual: ${state.spin_phase}, Msg Count: ${state.follow_up_count}`);
+  
   const messages = [
     { role: 'system', content: systemPrompt },
     ...history.map(h => ({ role: h.role, content: h.content })),

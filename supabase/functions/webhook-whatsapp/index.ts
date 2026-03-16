@@ -276,6 +276,11 @@ async function processMessage(jid: string, userText: string) {
     follow_up_count: 0,
   };
 
+  console.log(`[whatsapp] Lead ID: ${leadId}, Phase: ${agentState.spin_phase}, Count: ${agentState.follow_up_count}`);
+  if (!lead.agent_state || lead.agent_state.length === 0) {
+    console.warn(`[whatsapp] Agent state NÃO encontrado para lead ${leadId} via join - usando default.`);
+  }
+
   // ── Se identificador é @lid, salva nos metadados para futuros matches ──
   if (jid.includes('@lid')) {
     const currentMeta  = lead.metadata || {};
