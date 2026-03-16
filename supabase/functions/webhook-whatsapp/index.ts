@@ -56,9 +56,14 @@ serve(async (req) => {
       console.log(`[whatsapp] JID normalizado: ${rawJid} → ${jid}`);
     }
 
-    // ── Filtra Grupos e Comunidades ──────────────────────────────────────────
-    if (jid.includes('@g.us') || jid.includes('@broadcast') || jid.includes('newsletter')) {
-      console.log(`[whatsapp] Ignorando mensagem de grupo/comunidade: ${jid}`);
+    // ── Filtra Grupos, Comunidades e o próprio Agente ───────────────────────
+    if (
+      jid.includes('@g.us') || 
+      jid.includes('@broadcast') || 
+      jid.includes('newsletter') ||
+      jid.includes('553186460883') // Ignora o próprio número do agente
+    ) {
+      console.log(`[whatsapp] Ignorando mensagem de grupo/comunidade/próprio agente: ${jid}`);
       return new Response('ok', { status: 200 });
     }
 
@@ -124,7 +129,11 @@ function normalizeJid(rawJid: string, event: any, dataObj: any): string {
   ];
 
   for (const candidate of candidates) {
-    if (typeof candidate === 'string' && candidate.includes('@s.whatsapp.net')) {
+    if (
+      typeof candidate === 'string' && 
+      candidate.includes('@s.whatsapp.net') &&
+      !candidate.includes('553186460883') // Não usa o número do agente como normalização
+    ) {
       return candidate;
     }
   }
