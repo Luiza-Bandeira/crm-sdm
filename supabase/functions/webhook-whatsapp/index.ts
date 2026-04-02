@@ -16,20 +16,36 @@ import { getAudioBase64, transcribeAudio }    from '../_shared/audio.ts';
 
 
 serve(async (req) => {
-  console.log(`[webhook-whatsapp] Request: ${req.method} ${req.url}`);
+  const timestamp = new Date().toISOString();
+  console.log(`[webhook-whatsapp] [${timestamp}] Request: ${req.method} ${req.url}`);
+  
   if (req.method !== 'POST') return new Response('ok', { status: 200 });
 
+  let rawBody = '';
   try {
-    const rawBody = await req.text();
-    console.log('[webhook-whatsapp] Raw Body:', rawBody);
+    rawBody = await req.text();
+    console.log('[webhook-whatsapp] Raw Body Length:', rawBody.length);
     
     let event;
     try {
       event = JSON.parse(rawBody);
     } catch (e) {
       console.error('[webhook-whatsapp] Falha ao parsear JSON:', e.message);
+      // Log failure to database for visibility
+      await supabase.from('webhook_logs').insert({
+        function_name: 'webhook-whatsapp',
+        payload: { error: 'JSON_PARSE_ERROR', raw: rawBody.substring(0, 1000) },
+        status: 'parse_error'
+      });
       return new Response('ok', { status: 200 });
     }
+
+    // Log the event to the database immediately
+    await supabase.from('webhook_logs').insert({
+      function_name: 'webhook-whatsapp',
+      payload: event,
+      status: 'received'
+    });
 
     if (event.event !== 'messages.upsert' && event.event !== 'MESSAGES_UPSERT') {
       console.log('[webhook-whatsapp] Ignorando evento não suportado:', event.event);
@@ -38,6 +54,7 @@ serve(async (req) => {
 
     const dataObj = event.data;
     if (!dataObj || !dataObj.key || !dataObj.message) {
+      console.log('[webhook-whatsapp] Evento malformado ou vazio.');
       return new Response('ok', { status: 200 });
     }
 
@@ -79,7 +96,7 @@ serve(async (req) => {
             const text = await transcribeAudio(base64);
             if (text) {
               console.log(`[transcription] ${jid}: ${text}`);
-              await processMessage(jid, `[Áudio]: ${text}`);
+              await processMessage(jid, `[Áudio]: ${text}`, messageId);
             } else {
               console.error(`[audio] ${jid}: Não consegui transcrever o áudio.`);
             }
@@ -98,7 +115,7 @@ serve(async (req) => {
 
     if (!jid || !text) return new Response('ok', { status: 200 });
 
-    processMessage(jid, text).catch(err =>
+    processMessage(jid, text, messageId).catch(err =>
       console.error('[webhook-whatsapp] Erro no processamento:', err)
     );
 
@@ -116,36 +133,75 @@ serve(async (req) => {
 // phoneNumber, contact.id, ou remoteJid de outros eventos.
 // ============================================================
 function normalizeJid(rawJid: string, event: any, dataObj: any): string {
-  if (!rawJid || !rawJid.includes('@lid')) return rawJid; // não é @lid, retorna como está
+  if (!rawJid) return rawJid;
+  
+  // Se o JID já é um número real (@s.whatsapp.net), retorna ele
+  if (rawJid.includes('@s.whatsapp.net')) return rawJid;
 
-  // Candidatos de campos que podem conter o número real em formato @s.whatsapp.net
+  // Candidatos de campos que podem conter o número real em diversos formatos
   const candidates: any[] = [
+    dataObj?.key?.remoteJidAlt,             // Evolução v2: remoteJidAlt na key
+    event?.remoteJidAlt,                    // Caso venha no nível do evento
+    dataObj?.remoteJidAlt,                  // No data
+    event?.senderPn,                        // Evolution API: real phone number
+    dataObj?.senderPn,                      // Evolution API
     event?.sender,                          // campo sender no nível do evento
     dataObj?.sender,                        // campo sender no data
-    dataObj?.participant,                   // em grupos, o participant tem o número real
     dataObj?.phoneNumber,                   // algumas versões da Evolution
     dataObj?.contact?.id,                   // campo de contato
-    dataObj?.key?.participant,              // participant dentro da key
+    dataObj?.key?.participant,              // participant dentro da key (em grupos)
+    dataObj?.participant,                   // em grupos, o participant tem o número real
   ];
 
-  for (const candidate of candidates) {
-    if (
-      typeof candidate === 'string' && 
-      candidate.includes('@s.whatsapp.net') &&
-      !candidate.includes('553186460883') // Não usa o número do agente como normalização
-    ) {
-      return candidate;
+  for (let candidate of candidates) {
+    if (!candidate || typeof candidate !== 'string') continue;
+
+    // Se o candidato já estiver no formato correto
+    if (candidate.includes('@s.whatsapp.net')) {
+      if (!candidate.includes('553186460883')) { // Ignora o bot
+        return candidate;
+      }
+    }
+
+    // Se o candidato for apenas números
+    const numeric = candidate.replace(/\D/g, '');
+    if (numeric.length >= 10 && numeric.length <= 15) {
+      if (numeric !== '553186460883') {
+        const formatted = `${numeric}@s.whatsapp.net`;
+        console.log(`[whatsapp] Número real extraído de "${candidate}": ${formatted}`);
+        return formatted;
+      }
     }
   }
 
-  // Nenhum campo com @s.whatsapp.net encontrado — loga para diagnóstico
-  return rawJid; // retorna @lid original como fallback
+  // Se nada foi encontrado e é um @lid, logamos para diagnóstico mas mantemos o @lid
+  if (rawJid.includes('@lid')) {
+    console.log(`[whatsapp] Não foi possível extrair número real para o LID: ${rawJid}`);
+  }
+  
+  return rawJid;
 }
 
 // ============================================================
 // CORE — Processa mensagem recebida
 // ============================================================
-async function processMessage(jid: string, userText: string) {
+async function processMessage(jid: string, userText: string, messageId?: string) {
+  console.log('[processMessage] Início (ID:', messageId, '):', jid);
+
+  // 0. Idempotência: Checa se já processamos este ID de mensagem
+  if (messageId) {
+    const { data: existing } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('external_id', messageId)
+      .maybeSingle();
+
+    if (existing) {
+      console.log(`[processMessage] Mensagem duplicada ignorada (ID: ${messageId})`);
+      return;
+    }
+  }
+
   const isLid = jid.includes('@lid');
 
   // 1. Match exato por JID
@@ -154,9 +210,10 @@ async function processMessage(jid: string, userText: string) {
     .select('*, agent_state(*)')
     .eq('phone', jid)
     .maybeSingle();
+  console.log('[processMessage] Lead via JID:', lead?.id || 'não encontrado');
 
-  // 2. Match numérico — APENAS para @s.whatsapp.net (nunca para @lid, que não é número)
-  if (!lead && !isLid) {
+  // 2. Match numérico — APENAS para @s.whatsapp.net (ou extraído de @lid via normalizeJid)
+  if (!lead) {
     const numeric = jid.replace(/\D/g, '');
     if (numeric.length >= 10) {
       const { data: leadByNumbers } = await supabase
@@ -164,9 +221,11 @@ async function processMessage(jid: string, userText: string) {
         .select('*, agent_state(*)')
         .eq('phone', numeric)
         .maybeSingle();
+      
       if (leadByNumbers) {
         lead = leadByNumbers;
         console.log(`[whatsapp] Vinculando JID ${jid} ao lead numérico ${numeric}`);
+        // Se o lead existia apenas com número, atualizamos para o JID completo (@s.whatsapp.net ou @lid)
         await supabase.from('leads').update({ phone: jid }).eq('id', lead.id);
       }
     }
@@ -202,70 +261,12 @@ async function processMessage(jid: string, userText: string) {
     }
   }
 
-  // 5. HEURÍSTICA PARA @lid SEM MATCH:
-  //    Quando a primeira resposta de um lead da landing page chega como @lid,
-  //    ainda não há mapeamento. Buscamos um lead da landing page criado nas
-  //    últimas 48h que ainda não recebeu nenhuma mensagem do usuário
-  //    (apenas a mensagem de boas-vindas foi enviada pelo agente).
-  if (!lead && isLid) {
-    const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-    const { data: candidateLeads } = await supabase
-      .from('leads')
-      .select('id, name, phone, stage_id, score, notes, metadata, source, agent_state!inner(spin_phase, spin_data, follow_up_count)')
-      .not('phone', 'like', '%@lid%')  // excluir leads que já são @lid
-      .gte('created_at', since)
-      .order('created_at', { ascending: false });
-
-    // Filtra candidatos sem nenhuma mensagem de usuário ainda
-    const awaitingReply = (candidateLeads ?? []).filter(cl => {
-      const followUp = (cl as any).agent_state?.[0]?.follow_up_count ?? 0;
-      return followUp <= 1; // apenas a mensagem de boas-vindas foi enviada
-    });
-
-    if (awaitingReply.length === 1) {
-      lead = awaitingReply[0];
-      console.log(`[whatsapp] @lid ${jid} vinculado à landing page lead ${lead.id} (heurística)`);
-      // Salva o LID nos metadados para futuros matches
-      const currentMeta = (lead as any).metadata || {};
-      const knownLids   = currentMeta.known_lids || [];
-      if (!knownLids.includes(jid)) {
-        await supabase.from('leads')
-          .update({ metadata: { ...currentMeta, known_lids: [...knownLids, jid] } })
-          .eq('id', lead.id);
-      }
-    } else if (awaitingReply.length > 1) {
-      console.warn(`[whatsapp] @lid ${jid}: ${awaitingReply.length} candidatos — não é possível determinar o lead correto automaticamente.`);
-    }
-  }
+  // A Heurística de suposição de @lid foi removida para evitar atribuições incorretas.
+  // Se o lead não foi identificado via JID, Número ou Metadata, não processamos.
 
   if (!lead) {
-    // Lead novo — veio direto pelo WhatsApp (sem passar pela landing page)
-    const { data: newLead } = await supabase
-      .from('leads')
-      .insert({
-        phone:    jid,
-        source:   'whatsapp_inbound',
-        stage_id: STAGES.NOVO_LEAD,
-      })
-      .select('id')
-      .single();
-
-    await supabase.from('agent_state').insert({
-      lead_id:    newLead!.id,
-      spin_phase: 'situacao',
-      spin_data:  {},
-      follow_up_count: 0 // Começa em 0 porque nunca falamos com ele
-    });
-
-    await logActivity(newLead!.id, 'stage_change', 'Lead criado via WhatsApp direto', null, STAGES.NOVO_LEAD);
-
-    lead = {
-      ...newLead,
-      stage_id:    STAGES.NOVO_LEAD,
-      agent_state: [{ spin_phase: 'situacao', spin_data: {}, follow_up_count: 0 }],
-    };
-
-    console.log(`[whatsapp] Novo lead criado via WhatsApp direto: ${jid}`);
+    console.log(`[processMessage] Ignorando mensagem de número desconhecido: ${jid}`);
+    return;
   }
 
   const leadId     = lead.id;
@@ -276,9 +277,11 @@ async function processMessage(jid: string, userText: string) {
     follow_up_count: 0,
   };
 
-  console.log(`[whatsapp] Lead ID: ${leadId}, Phase: ${agentState.spin_phase}, Count: ${agentState.follow_up_count}`);
-  if (!lead.agent_state || lead.agent_state.length === 0) {
-    console.warn(`[whatsapp] Agent state NÃO encontrado para lead ${leadId} via join - usando default.`);
+  console.log(`[whatsapp] Lead ID: ${leadId}, Phase: ${agentState.spin_phase}, Count: ${agentState.follow_up_count}, Active: ${agentState.is_active ?? true}`);
+  
+  if (agentState.is_active === false) {
+    console.log(`[whatsapp] IA desativada para este lead (${leadId}). Abortando processamento.`);
+    return;
   }
 
   // ── Se identificador é @lid, salva nos metadados para futuros matches ──
@@ -294,7 +297,7 @@ async function processMessage(jid: string, userText: string) {
   }
 
   // ── Salva mensagem do usuário ───────────────────────────
-  await saveMessage(leadId, 'user', userText);
+  await saveMessage(leadId, 'user', userText, messageId);
 
   // ── Busca histórico completo (últimas 40 mensagens) ────────
   const { data: historyRaw } = await supabase
@@ -307,9 +310,10 @@ async function processMessage(jid: string, userText: string) {
   // Inverte para que a ordem no prompt seja cronológica (mais antigas → mais novas)
   const history = (historyRaw ?? []).reverse();
 
-  // ── Gera resposta via agente SPIN ───────────────────────
+  console.log('[processMessage] Chamando generateAgentReply...');
   const { reply, newPhase, spinData, score, nextStage, notes } =
     await generateAgentReply(history ?? [], agentState, lead);
+  console.log('[processMessage] Resposta gerada:', reply.substring(0, 30) + '...');
 
   // ── Salva resposta do agente ────────────────────────────
   await saveMessage(leadId, 'assistant', reply);
@@ -352,8 +356,43 @@ async function processMessage(jid: string, userText: string) {
   // ── Envia resposta pelo WhatsApp ────────────────────────
   // Quando a mensagem chega por @lid, usamos o telefone real do lead para responder.
   // A Evolution API não aceita @lid como destinatário, somente @s.whatsapp.net ou número.
+  // ── Processa Link de Meet Simples ───────────────────────
+  let finalReply = reply;
+  if (finalReply.includes('(gerado pelo sistema)')) {
+    // Modo mais simples possível de gerar um link único para a sala de reunião
+    const simpleMeetLink = `https://meet.jit.si/Sessao-SDM-${leadId.substring(0, 8)}`;
+    finalReply = finalReply.replace('(gerado pelo sistema)', simpleMeetLink);
+    
+    // Registra na tabela de meetings para controle no CRM
+    try {
+      await supabase.from('meetings').insert({
+        lead_id: leadId,
+        meet_link: simpleMeetLink,
+        status: 'proposed'
+      });
+      
+      // Move o lead automaticamente para o estágio "Sessão Demonstrativa" (ID 5)
+      await supabase.from('leads').update({ stage_id: STAGES.SESSAO_DEMONSTRATIVA }).eq('id', leadId);
+      console.log(`[whatsapp] Lead ${leadId} movido para Sessão Demonstrativa.`);
+
+      // Notifica o Humano (Consultor) se houver telefone configurado
+      const { data: settings } = await supabase.from('scheduling_settings').select('consultant_phone').maybeSingle();
+      if (settings?.consultant_phone) {
+        const notifyMsg = `🔔 *Laura Alerta:* O lead *${lead.name || lead.phone}* acaba de receber o link para Sessão Demonstrativa!\n\nLink: ${simpleMeetLink}`;
+        console.log(`[whatsapp] Notificando consultor: ${settings.consultant_phone}`);
+        await sendWhatsApp(settings.consultant_phone, notifyMsg);
+      }
+    } catch (e) {
+      console.error('[whatsapp] Erro ao salvar o meet_link ou notificar:', e);
+    }
+  }
+
+  // ── Envia resposta pelo WhatsApp ────────────────────────
   const sendTo = (isLid && lead.phone && !lead.phone.includes('@lid'))
     ? lead.phone
     : jid;
-  await sendWhatsApp(sendTo, reply);
+  
+  console.log('[processMessage] Enviando via WhatsApp para:', sendTo);
+  await sendWhatsApp(sendTo, finalReply);
+  console.log('[processMessage] Fim do processamento.');
 }

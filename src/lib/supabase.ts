@@ -55,3 +55,37 @@ export interface Activity {
   to_stage_id?: number;
   created_at: string;
 }
+
+export interface Task {
+  id: string;
+  lead_id: string;
+  title: string;
+  completed: boolean;
+  created_at: string;
+}
+
+export interface AgentState {
+  is_active: boolean;
+  spin_phase: string;
+  follow_up_count: number;
+}
+
+export interface Lead {
+  id: string;
+  name?: string;
+  phone: string;
+  email?: string;
+  source?: string;
+  stage_id: number;
+  score: number;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  stage_name?: string;
+  stage_color?: string;
+  spin_phase?: string;
+  last_message_at?: string;
+  follow_up_count?: number;
+  message_count?: number;
+  agent_state?: AgentState[];
+}

@@ -1,19 +1,27 @@
 import { useState, useEffect, useCallback } from 'react'
-import { RefreshCw, Search, Zap, LayoutDashboard, Columns, Plus } from 'lucide-react'
+import { RefreshCw, Search, Zap, LayoutDashboard, Columns, Plus, Settings, Calendar } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Lead, PipelineStage } from '../lib/supabase'
 import KpiHeader from '../components/KpiHeader'
 import KanbanBoard from '../components/KanbanBoard'
 import LeadModal from '../components/LeadModal'
 import MetricsView from '../components/MetricsView'
+import SettingsModal from '../components/SettingsModal'
+import AgendaView from '../components/AgendaView'
 
 const STAGES_COLORS: Record<number, string> = {
-  1: '#94a3b8', 2: '#3b82f6', 3: '#f59e0b', 4: '#8b5cf6',
-  5: '#ec4899', 6: '#f97316', 7: '#22c55e', 8: '#ef4444',
+  1: '#94a3b8', // Novo Lead
+  2: '#3b82f6', // Diagnóstico
+  3: '#f59e0b', // Apresentação
+  4: '#8b5cf6', // Preço e Negociação
+  5: '#06b6d4', // Sessão Demonstrativa
+  6: '#f97316', // Reativação
+  7: '#22c55e', // Ganho
+  8: '#ef4444', // Perdido
 }
 
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState<'metrics' | 'pipeline'>('metrics')
+  const [activeTab, setActiveTab] = useState<'metrics' | 'pipeline' | 'agenda'>('metrics')
   const [leads, setLeads] = useState<Lead[]>([])
   const [stages, setStages] = useState<PipelineStage[]>([])
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
@@ -21,6 +29,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [lastUpdated, setLastUpdated] = useState(new Date())
+  const [showSettings, setShowSettings] = useState(false)
 
   const loadData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -47,8 +56,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     loadData()
-
-    // Auto-refresh every 30s
     const interval = setInterval(() => loadData(true), 30000)
     return () => clearInterval(interval)
   }, [loadData])
@@ -109,6 +116,13 @@ export default function Dashboard() {
               <Columns size={16} />
               Pipeline
             </button>
+            <button 
+              className={`tab-item ${activeTab === 'agenda' ? 'active' : ''}`}
+              onClick={() => setActiveTab('agenda')}
+            >
+              <Calendar size={16} />
+              Agenda
+            </button>
           </nav>
         </div>
 
@@ -123,6 +137,14 @@ export default function Dashboard() {
               style={{ width: '200px' }}
             />
           </div>
+          <button 
+            className="btn btn-ghost icon-only" 
+            style={{ marginRight: '12px' }}
+            title="Configurações"
+            onClick={() => setShowSettings(true)}
+          >
+            <Settings size={16} />
+          </button>
           <button 
             className="btn btn-primary" 
             style={{ marginRight: '12px' }}
@@ -147,7 +169,7 @@ export default function Dashboard() {
           </div>
         ) : (
           <>
-            {activeTab === 'metrics' ? (
+            {activeTab === 'metrics' && (
               <div className="metrics-page animate-fade">
                 <div style={{ marginBottom: '24px' }}>
                   <h2 style={{ fontSize: '24px', fontWeight: 700 }}>Performance Comercial</h2>
@@ -155,7 +177,9 @@ export default function Dashboard() {
                 </div>
                 <MetricsView leads={leads} />
               </div>
-            ) : (
+            )}
+            
+            {activeTab === 'pipeline' && (
               <div className="pipeline-page animate-fade" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ marginBottom: '16px' }}>
                   <KpiHeader leads={filteredLeads} />
@@ -170,6 +194,8 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
+
+            {activeTab === 'agenda' && <AgendaView />}
           </>
         )}
       </main>
@@ -184,6 +210,8 @@ export default function Dashboard() {
           onDelete={handleLeadDelete}
         />
       )}
+
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
 
       <style>{`
         .dashboard {
