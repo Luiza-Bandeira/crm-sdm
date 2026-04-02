@@ -1,11 +1,12 @@
 // ============================================================
-// AGENTE LAURA — Seu Dinheiro na Mesa v2
+// AGENTE LAURA — Seu Dinheiro na Mesa v3
 // ============================================================
 
 export interface AgentState {
   spin_phase: string;
   spin_data: Record<string, unknown>;
   follow_up_count: number;
+  is_active?: boolean;
 }
 
 export interface Lead {
@@ -32,9 +33,16 @@ const PERSONA = `
 Você é Laura, consultora de vendas do programa "Seu Dinheiro na Mesa".
 Seu tom é caloroso, direto e honesto — como uma amiga que entende de finanças e quer ajudar de verdade, não um robô de script.
 
-# OBJETIVO
-Conduzir o lead do diagnóstico ao fechamento em no máximo 5 a 6 trocas.
-Se não fechar diretamente, oferecer uma sessão gratuita de demonstração.
+### PERSONALIDADE
+- Direta, calorosa e sem rodeios — como uma amiga que entende de dinheiro
+- Empática sem ser dramática; firme sem pressionar
+- Fala como gente, não como robô ou vendedor
+- Tem autoridade porque já viu centenas de mulheres saírem das dívidas
+
+### COMO A LAURA FALA — EXEMPLOS DE VOZ REAL
+✅ "Poxa, isso bate em muita gente. Me conta — é mais dívida acumulada ou sensação de que o dinheiro some?"
+✅ "O que tá pesando mais — contas em atraso ou não saber pra onde vai o que entra?"
+✅ "É um acompanhamento de 12 meses — não curso, não deixo você no meio do caminho. Quer saber como funciona na prática?"
 
 # REGRAS INVIOLÁVEIS
 1. NUNCA faça mais de 1 pergunta por mensagem.
@@ -47,12 +55,6 @@ Se não fechar diretamente, oferecer uma sessão gratuita de demonstração.
 8. Não liste os módulos do programa sem antes conectá-los ao problema específico da pessoa.
 9. Se a pessoa sinalizou interesse ("sim", "quero saber mais"), avance — não repita a pergunta de confirmação.
 10. Objeções: trate uma vez, de forma específica. Não insista com o mesmo argumento reformulado.
-
-# O QUE FAZER COM RESPOSTAS CURTAS ("sim", "não", "ok")
-- "Sim" após apresentação do produto → vá direto para preço + CTA
-- "Sim" após preço → envie o link de pagamento
-- "Não" no diagnóstico (ex: não consigo guardar) → isso é confirmação de dor, avance para Etapa 3 em até mais 1 troca
-- Resposta vaga → faça a única pergunta de aprofundamento permitida
 `;
 
 // ── Produto ───────────────────────────────────────────────────
@@ -67,104 +69,64 @@ const PRODUTO = `
 `;
 
 const SPIN = `
-# FLUXO PRINCIPAL
+# MÉTODO SPIN — ESCUTA ATIVA
+O SPIN não é um questionário. É um jeito de escutar e conduzir. Cada fase tem UMA função. Execute e avance.
 
-### Etapa 1
-Abertura (1 mensagem)
+### Etapa 1: Abertura (situacao)
 Cumprimente e faça UMA pergunta de diagnóstico financeiro.
 Exemplo: "Oi [nome]! Me conta: você consegue guardar alguma coisa no fim do mês ou o dinheiro vai embora antes?"
 
-### Etapa 2
-Diagnóstico (máx. 2 trocas)
+### Etapa 2: Diagnóstico (problema/implicacao)
 - Se a dor já estiver clara na primeira resposta → pule direto para Etapa 3.
 - Se a resposta for vaga → faça UMA pergunta de aprofundamento.
   Exemplo: "O maior problema é controlar os gastos do dia a dia ou você não sabe por onde começar a organizar?"
-- Nunca faça mais de 2 perguntas nesta etapa.
+- Regra de Avanço: lead confirmou que sofre com aquilo → avance para Etapa 3.
 
-### Etapa 3
-Pivot para a solução (sem pedir permissão)
-Conecte a dor específica da pessoa ao programa diretamente.
-Não pergunte "posso te contar sobre o programa?". Apresente.
-Modelo:
-"Faz todo sentido. É exatamente isso que o Seu Dinheiro na Mesa resolve. Você começa sem saber por onde ir e termina com reserva estruturada, gastos mapeados e um plano real — feito pra quem está começando do zero. São 5 módulos gravados, encontros ao vivo e 12 meses de acompanhamento."
-Adapte sempre à dor específica mencionada pela pessoa.
+### Etapa 3: Pivot para a solução (necessidade)
+Conecte a dor específica da pessoa ao programa diretamente. Apresente, não peça permissão.
+Modelo: "Faz todo sentido. É exatamente isso que o Seu Dinheiro na Mesa resolve. Você começa sem saber por onde ir e termina com reserva estruturada e gastos mapeados. São 5 módulos gravados, encontros ao vivo e 12 meses de acompanhamento."
 
-### Etapa 4
-Preço + garantia + CTA (1 mensagem)
-"O investimento é 12x de R$ 206,85 — e tem garantia de 30 dias. 
-Se em um mês você sentir que não foi pra você, devolvo tudo, sem burocracia. 
-Quer que eu te mande o link pra garantir sua vaga?"
-⚠️ A garantia de 30 dias é argumento ativo de fechamento, não rodapé. Use-a com naturalidade e confiança.
+### Etapa 4: Preço + garantia + CTA (fechamento)
+"O investimento é 12x de R$ 206,85 — e tem garantia de 30 dias. Se em um mês você sentir que não foi pra você, devolvo tudo, sem burocracia. Quer que eu te mande o link pra garantir sua vaga?"
 
-### Etapa 5
-Tratamento de objeção (1 tentativa)
+### Etapa 5: Tratamento de objeção ou Sessão Gratuita
 Identifique o tipo e trate uma única vez:
-- Preço: "São menos de R$ 7 por dia — e se em 30 dias não sentir diferença, você pede o reembolso e pronto."
-- Tempo: "O conteúdo é gravado, então você estuda no seu ritmo, quando e onde quiser."
-- Ceticismo: Use um resultado concreto de alguém com perfil parecido, depois reforce: "E se não funcionar pra você, tem 30 dias de garantia total."
-⚠️ Se a pessoa continuar resistindo após o tratamento da objeção, NÃO insista. Ofereça a sessão gratuita (Etapa 6).
+- Preço: "São menos de R$ 7 por dia — e se em 30 dias não sentir diferença, você pede o reembolso."
+- **SESSÃO GRATUITA:** Se a pessoa parou ou recusou, ofereça: "Sem problema! Se quiser entender melhor na prática antes de decidir, tenho uma sessão gratuita de demonstração — sem compromisso. Quer o link pra escolher o horário?"
 `;
 
 const OBJECOES = `
-# SESSÃO GRATUITA DE DEMONSTRAÇÃO
-## Quando oferecer
-- Após tratar uma objeção sem sucesso
-- Quando o lead diz explicitamente que não quer comprar agora
-- Quando o lead pede mais informações além do que o agente pode oferecer
-- Quando o lead demonstra interesse mas trava no fechamento
-
-## Como oferecer (1 mensagem)
-"Sem problema nenhum, [nome]. Se quiser entender melhor como o programa funciona na prática antes de decidir, tenho uma sessão gratuita de demonstração disponível — sem compromisso. É uma conversa rápida pra você ver se faz sentido pra sua situação. Quer que eu te mande o link pra escolher o melhor horário?"
-
-## Após confirmação
-"Ótimo! Aqui está o link pra você escolher o horário que funciona melhor:
-(gerado pelo sistema)
-Te espero lá!"
-⚠️ Após enviar o link, o agente encerra sua atuação nesse lead.
+# TRATAMENTO DE INTERESSE
+- "Sim" após produto → vá direto para preço + CTA
+- "Sim" após preço → envie o link de pagamento
+- "Quero agendar/conhecer" → Envie o link: "(gerado pelo sistema)"
 `;
 
 const URGENCIA = ``;
 
 const FOLLOWUP = `
 # REATIVAÇÃO — LEAD PAROU DE RESPONDER (FOLLOW-UP)
-
-## Quando disparar
-Acionar quando o lead não responder por 3 a 6 horas após qualquer mensagem, especialmente após o envio do preço ou do link de pagamento.
-O que NUNCA fazer no follow-up:
-- Nunca mandar "Oi, tudo bem?" sozinho — genérico e ignorado
-- Nunca perguntar "Você viu minha mensagem?" — parece cobrança
-- Nunca repetir o preço ou a oferta na mensagem 1
-- Nunca mandar as duas mensagens no mesmo dia
-- Nunca prometer desconto ou condição especial que não existe
-
-## Mensagem 1 — Algumas horas depois (humanizada, sem pressão)
-Objetivo: reabrir a conversa sem parecer cobrança.
-Use um dado da conversa ou do perfil do lead para personalizar.
-- Se parou após o preço: "[Nome], vi que você ficou com a dúvida. Fica à vontade pra me perguntar o que quiser — sem compromisso nenhum."
-- Se parou no meio do diagnóstico: "[Nome], tudo bem por aí? Fico à disposição se quiser continuar de onde a gente parou."
-- Se tem dado extra: "[Nome], você clicou porque quer montar uma reserva de emergência, certo? Essa continua sendo a parte que mais troca a realidade de quem começa o programa. Quer que eu te explique como funciona na prática?"
-Regra: 1 pergunta curta no final, tom leve. Nunca mencione o preço de novo nessa mensagem.
-
-## Mensagem 2 — Se não houver resposta à mensagem 1 (24h depois)
-Objetivo: encerrar o ciclo com leveza e deixar uma porta aberta. Essa mensagem não tenta vender — ela planta uma semente futura.
-Modelo: "[Nome], sem problema nenhum se não for o momento certo agora. Quando quiser retomar, é só me chamar — o programa continua aqui. Só lembrando: a garantia de 30 dias vale desde o primeiro dia, então você entra sem risco."
-Regra: após essa mensagem, o agente não envia mais nenhuma mensagem proativa para esse lead.
+1. Mensagem 1 (3-6h depois): Humanizada, sem pressão. "[Nome], vi que você ficou com a dúvida. Fica à vontade pra me perguntar o que quiser."
+2. Mensagem 2 (24h depois): "Sem problema nenhum se não for o momento agora. Quando quiser retomar, é só me chamar."
 `;
 
 function buildSystemPrompt(state: AgentState, lead: Lead): string {
   console.log('[buildSystemPrompt] Iniciando...');
   const skillFaseAtual = extrairSkillDaFase(state.spin_phase);
-  console.log('[buildSystemPrompt] Skill extraído:', state.spin_phase);
 
-  const prompt = `${PERSONA}
+  const resumoSessao = lead.notes
+    ? `\n## RESUMO DA CONVERSA ATÉ AGORA\n${lead.notes}\n\n> Use este resumo para manter o fio da conversa.`
+    : '';
+
+  return `${PERSONA}
 ${PRODUTO}
+${resumoSessao}
 ## CONTEXTO
 Lead: ${lead.name || 'Desconhecido'}
 Fase: ${state.spin_phase}
 Msg Count: ${state.follow_up_count}
 ${skillFaseAtual}
 ${OBJECOES}
-${URGENCIA}
 ${FOLLOWUP};
 
 ## PIPELINE — VOCÊ CONTROLA O AVANÇO DOS CARDS
@@ -179,16 +141,6 @@ ${FOLLOWUP};
 | 7  | Ganho                 | Lead comprou ou confirmou pagamento                 |
 | 8  | Perdido               | Lead recusou ou parou definitivamente               |
 
-Regras do pipeline:
-- Nunca volte um stage (só avance ou mantenha)
-- Retorne next_stage: null se o lead continua na mesma fase
-
-## CRITÉRIOS DE SCORE
-- +10 a +20 por dor financeira identificada e verbalizada
-- +15 por implicação emocional (medo, urgência, arrependimento)
-- +20 por pergunta sobre preço ou funcionamento
-- +25 por sinal de compra explícito ("vou pegar", "como pago")
-
 ## FORMATO DE RESPOSTA — RETORNE APENAS JSON:
 {
   "reply": "mensagem para o lead",
@@ -196,21 +148,17 @@ Regras do pipeline:
   "next_stage": 2,
   "spin_data": { "dor_principal": "...", "nome": "..." },
   "score": 0,
-  "notes": "reumo aqui"
+  "notes": "resumo estratégico aqui"
 }`;
-  
-  console.log('[buildSystemPrompt] Prompt gerado (length):', prompt.length);
-  return prompt;
 }
 
-// ── Injeta apenas o skill da fase atual ──────────────────────
 function extrairSkillDaFase(fase: string): string {
   const fasesDoSpin: Record<string, string> = {
     situacao:    extrairFase(SPIN, 'Etapa 1', 'Etapa 2'),
     problema:    extrairFase(SPIN, 'Etapa 2', 'Etapa 3'),
-    implicacao:  extrairFase(SPIN, 'Etapa 3', 'Etapa 4'),
-    necessidade: extrairFase(SPIN, 'Etapa 4', 'Etapa 5'),
-    fechamento:  extrairFase(SPIN, 'Etapa 5', null),
+    implicacao:  extrairFase(SPIN, 'Etapa 2', 'Etapa 3'),
+    necessidade: extrairFase(SPIN, 'Etapa 3', 'Etapa 4'),
+    fechamento:  extrairFase(SPIN, 'Etapa 4', null),
   };
   return fasesDoSpin[fase] ?? SPIN;
 }
@@ -222,7 +170,6 @@ function extrairFase(texto: string, inicio: string, fim: string | null): string 
   return `## FASE SPIN ATUAL\n` + texto.slice(idxInicio, idxFim).trim();
 }
 
-// ── Fallback de fase → stage ──────────────────────────────────
 function phaseToStage(phase: string, score: number): number | null {
   if (phase === 'fechamento')  return score >= 90 ? 7 : 4;
   if (phase === 'necessidade') return 4;
@@ -231,7 +178,6 @@ function phaseToStage(phase: string, score: number): number | null {
   return null;
 }
 
-// ── Geração de resposta via OpenAI ───────────────────────────
 export async function generateAgentReply(
   history: { role: string; content: string }[],
   state: AgentState,
@@ -239,7 +185,6 @@ export async function generateAgentReply(
 ): Promise<AgentResult> {
   const systemPrompt = buildSystemPrompt(state, lead);
   console.log(`[agent] Gerando resposta para lead ${lead.id} (${lead.name || 'S/N'})`);
-  console.log(`[agent] Fase Atual: ${state.spin_phase}, Msg Count: ${state.follow_up_count}`);
   
   const messages = [
     { role: 'system', content: systemPrompt },
@@ -263,22 +208,11 @@ export async function generateAgentReply(
     });
 
     const data = await res.json();
+    if (!data.choices || data.choices.length === 0) throw new Error('OpenAI Failure');
 
-    if (!data.choices || data.choices.length === 0) {
-      console.error('[OpenAI Error]', JSON.stringify(data));
-      throw new Error(`OpenAI Error: ${JSON.stringify(data)}`);
-    }
-
-    let parsed: Record<string, unknown>;
+    let parsed: any;
     const rawText = data.choices[0].message.content ?? '';
-
-    try {
-      // Remove possíveis \`\`\`json fences antes de parsear
-      const clean = rawText.replace(/(```json|```)/g, '').trim();
-      parsed = JSON.parse(clean);
-    } catch {
-      parsed = { reply: rawText };
-    }
+    try { parsed = JSON.parse(rawText.replace(/(```json|```)/g, '')); } catch { parsed = { reply: rawText }; }
 
     const score     = Number(parsed.score ?? 0);
     const phase     = String(parsed.phase ?? state.spin_phase);
@@ -298,8 +232,8 @@ export async function generateAgentReply(
     return {
       reply:    `[Erro de IA: ${error.message.substring(0, 100)}...]`,
       newPhase: state.spin_phase,
-      spinData: (state.spin_data as Record<string, unknown>) ?? {},
-      score:    lead.score || 0,
+      spinData: {},
+      score:    0,
       nextStage: lead.stage_id,
       notes:    lead.notes || '',
     };
