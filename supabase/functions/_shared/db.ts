@@ -8,11 +8,12 @@ export const supabase = createClient(
 export async function saveMessage(
   leadId: string,
   role: 'user' | 'assistant',
-  content: string
+  content: string,
+  externalId?: string
 ) {
   await supabase
     .from('conversations')
-    .insert({ lead_id: leadId, role, content });
+    .insert({ lead_id: leadId, role, content, external_id: externalId });
 }
 
 export async function logActivity(

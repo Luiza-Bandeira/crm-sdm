@@ -376,9 +376,9 @@ async function processMessage(jid: string, userText: string, messageId?: string)
       console.log(`[whatsapp] Lead ${leadId} movido para Sessão Demonstrativa.`);
 
       // Notifica o Humano (Consultor) se houver telefone configurado
-      const { data: settings } = await supabase.from('scheduling_settings').select('consultant_phone').maybeSingle();
+      const { data: settings } = await supabase.from('scheduling_settings').select('consultant_phone, consultant_name').maybeSingle();
       if (settings?.consultant_phone) {
-        const notifyMsg = `🔔 *Laura Alerta:* O lead *${lead.name || lead.phone}* acaba de receber o link para Sessão Demonstrativa!\n\nLink: ${simpleMeetLink}`;
+        const notifyMsg = `🔔 *Laura Alerta [${settings.consultant_name || 'Consultor'}]:* O lead *${lead.name || lead.phone}* acaba de receber o link para Sessão Demonstrativa!\n\nEle(a) entrará em contato em breve ou aguarde no horário agendado.\n\nLink: ${simpleMeetLink}`;
         console.log(`[whatsapp] Notificando consultor: ${settings.consultant_phone}`);
         await sendWhatsApp(settings.consultant_phone, notifyMsg);
       }
