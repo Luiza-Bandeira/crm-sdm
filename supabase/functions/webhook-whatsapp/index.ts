@@ -279,7 +279,7 @@ async function processMessage(jid: string, userText: string, messageId?: string)
 
   console.log(`[whatsapp] Lead ID: ${leadId}, Phase: ${agentState.spin_phase}, Count: ${agentState.follow_up_count}, Active: ${agentState.is_active ?? true}`);
   
-  if (agentState.is_active === false) {
+  if (agentState.is_active !== true) {
     console.log(`[whatsapp] IA desativada para este lead (${leadId}). Abortando processamento.`);
     return;
   }
@@ -311,7 +311,7 @@ async function processMessage(jid: string, userText: string, messageId?: string)
   const history = (historyRaw ?? []).reverse();
 
   console.log('[processMessage] Chamando generateAgentReply...');
-  const { reply, newPhase, spinData, score, nextStage, notes } =
+  const { reply, newPhase, spinData, score, nextStage, notes, scheduledTime } =
     await generateAgentReply(history ?? [], agentState, lead);
   console.log('[processMessage] Resposta gerada:', reply.substring(0, 30) + '...');
 
@@ -353,37 +353,67 @@ async function processMessage(jid: string, userText: string, messageId?: string)
     await supabase.from('leads').update({ score, notes: notes || lead.notes }).eq('id', leadId);
   }
 
-  // ── Envia resposta pelo WhatsApp ────────────────────────
-  // Quando a mensagem chega por @lid, usamos o telefone real do lead para responder.
-  // A Evolution API não aceita @lid como destinatário, somente @s.whatsapp.net ou número.
-  // ── Processa Link de Meet Simples ───────────────────────
+  // ── Processa Link de Reunião e Agendamento ─────────────
   let finalReply = reply;
-  if (finalReply.includes('(gerado pelo sistema)')) {
-    // Modo mais simples possível de gerar um link único para a sala de reunião
-    const simpleMeetLink = `https://meet.jit.si/Sessao-SDM-${leadId.substring(0, 8)}`;
-    finalReply = finalReply.replace('(gerado pelo sistema)', simpleMeetLink);
-    
-    // Registra na tabela de meetings para controle no CRM
+  if (scheduledTime) {
+    // Gera link único Jitsi para esta reunião
+    const meetLink = `https://meet.jit.si/SDM-${leadId.substring(0, 8)}-${Date.now().toString(36)}`;
+    finalReply = `${reply}\n\n🔗 *Link da reunião:* ${meetLink}`;
+
+    // Formata data/hora amigável para a mensagem de confirmação
+    let horaFormatada = 'horário agendado';
+    let scheduledStartISO: string | null = null;
+
     try {
-      await supabase.from('meetings').insert({
-        lead_id: leadId,
-        meet_link: simpleMeetLink,
-        status: 'proposed'
+      const dt = new Date(scheduledTime);
+      horaFormatada = dt.toLocaleString('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        weekday: 'long',
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
       });
-      
-      // Move o lead automaticamente para o estágio "Sessão Demonstrativa" (ID 5)
-      await supabase.from('leads').update({ stage_id: STAGES.SESSAO_DEMONSTRATIVA }).eq('id', leadId);
+      scheduledStartISO = dt.toISOString();
+      console.log(`[whatsapp] Reunião agendada para: ${horaFormatada}`);
+    } catch (e) {
+      console.error('[whatsapp] Erro ao parsear scheduledTime:', scheduledTime, e);
+    }
+
+    try {
+      // Salva reunião no banco com data/hora
+      await supabase.from('meetings').insert({
+        lead_id:       leadId,
+        meet_link:     meetLink,
+        scheduled_start: scheduledStartISO,
+        status:        'confirmed',
+        reminder_sent: false,
+      });
+
+      // Move lead para Sessão Demonstrativa
+      await supabase.from('leads')
+        .update({ stage_id: STAGES.SESSAO_DEMONSTRATIVA })
+        .eq('id', leadId);
       console.log(`[whatsapp] Lead ${leadId} movido para Sessão Demonstrativa.`);
 
-      // Notifica o Humano (Consultor) se houver telefone configurado
-      const { data: settings } = await supabase.from('scheduling_settings').select('consultant_phone, consultant_name').maybeSingle();
+      // Busca configurações do consultor
+      const { data: settings } = await supabase
+        .from('scheduling_settings')
+        .select('consultant_phone, consultant_name')
+        .maybeSingle();
+
+      // Notifica consultor
       if (settings?.consultant_phone) {
-        const notifyMsg = `🔔 *Laura Alerta [${settings.consultant_name || 'Consultor'}]:* O lead *${lead.name || lead.phone}* acaba de receber o link para Sessão Demonstrativa!\n\nEle(a) entrará em contato em breve ou aguarde no horário agendado.\n\nLink: ${simpleMeetLink}`;
-        console.log(`[whatsapp] Notificando consultor: ${settings.consultant_phone}`);
+        const notifyMsg =
+          `🔔 *Nova Sessão Agendada!*\n\n` +
+          `Lead: *${lead.name || lead.phone}*\n` +
+          `Data: *${horaFormatada}*\n` +
+          `Link: ${meetLink}`;
         await sendWhatsApp(settings.consultant_phone, notifyMsg);
+        console.log(`[whatsapp] Consultor notificado: ${settings.consultant_phone}`);
       }
     } catch (e) {
-      console.error('[whatsapp] Erro ao salvar o meet_link ou notificar:', e);
+      console.error('[whatsapp] Erro ao salvar reunião ou notificar:', e);
     }
   }
 

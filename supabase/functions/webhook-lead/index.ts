@@ -62,6 +62,10 @@ serve(async (req) => {
       }).eq('id', leadId);
 
       console.log(`[webhook-lead] Lead existente atualizado: ${leadId}`);
+
+      // Ativa o agente para o lead existente
+      await supabase.from('agent_state')
+        .upsert({ lead_id: leadId, is_active: true }, { onConflict: 'lead_id' });
     } else {
       // ── Cria novo lead ──────────────────────────────────
       const { data: newLead, error } = await supabase
@@ -83,6 +87,7 @@ serve(async (req) => {
         lead_id:    leadId,
         spin_phase: 'situacao',
         spin_data:  {},
+        is_active:  true,
       });
 
       // Loga criação no histórico de atividades

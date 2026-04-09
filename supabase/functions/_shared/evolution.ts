@@ -9,7 +9,14 @@ export async function sendWhatsApp(phone: string, text: string) {
       'apikey': API_KEY,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ number: phone, text }),
+    body: JSON.stringify({ 
+      number: phone, 
+      text, 
+      linkPreview: false,
+      options: {
+        linkPreview: false
+      }
+    }),
   });
 
   const data = await res.json();
