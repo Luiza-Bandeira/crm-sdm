@@ -45,10 +45,11 @@ serve(async (req) => {
     const phone = String(telefone_whatsapp).replace(/\D/g, '');
 
     // ── Verifica se lead já existe ──────────────────────────
+    // Busca tanto pelo número puro quanto pelo formato normalizado do WhatsApp
     const { data: existing } = await supabase
       .from('leads')
-      .select('id, name')
-      .eq('phone', phone)
+      .select('id, name, phone')
+      .or(`phone.eq.${phone},phone.eq.${phone}@s.whatsapp.net`)
       .maybeSingle();
 
     let leadId: string;

@@ -271,16 +271,21 @@ async function processMessage(jid: string, userText: string, messageId?: string)
 
   const leadId     = lead.id;
   const oldStage   = lead.stage_id ?? STAGES.NOVO_LEAD;
-  const agentState = lead.agent_state?.[0] ?? {
+  const rawState = lead.agent_state;
+  const agentStateFromDb = Array.isArray(rawState) ? rawState[0] : rawState;
+
+  const agentState = agentStateFromDb ?? {
     spin_phase: 'situacao',
     spin_data: {},
     follow_up_count: 0,
+    is_active: true, // Default para true se o registro não existir (ou seja reativado no webhook-lead)
   };
 
   console.log(`[whatsapp] Lead ID: ${leadId}, Phase: ${agentState.spin_phase}, Count: ${agentState.follow_up_count}, Active: ${agentState.is_active ?? true}`);
   
   if (agentState.is_active !== true) {
     console.log(`[whatsapp] IA desativada para este lead (${leadId}). Abortando processamento.`);
+    await logActivity(leadId, 'note', `Mensagem ignorada: IA está desativada para este lead.`, null, null);
     return;
   }
 
