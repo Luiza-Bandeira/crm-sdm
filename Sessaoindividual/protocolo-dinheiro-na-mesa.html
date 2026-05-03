@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Protocolo Dinheiro na Mesa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #0f1f3d;
+    --navy-deep: #0a1628;
+    --navy-mid: #162540;
+    --pink: #e8557a;
+    --pink-light: #f07092;
+    --pink-pale: #fce8ee;
+    --cream: #f5f0e8;
+    --text-light: #c8d4e8;
+    --text-muted: #7a90b0;
+    --serif: 'Cormorant Garamond', Georgia, serif;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--navy-deep);
+    color: var(--cream);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.2rem 5%;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background: rgba(10,22,40,0.85);
+    backdrop-filter: blur(12px);
+  }
+  .nav-logo {
+    font-family: var(--serif);
+    font-size: 1.15rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--cream);
+  }
+  .nav-logo span { color: var(--pink); font-style: italic; }
+  .nav-cta {
+    background: var(--pink);
+    color: #fff;
+    border: none;
+    padding: 0.55rem 1.4rem;
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s;
+    text-decoration: none;
+  }
+  .nav-cta:hover { background: var(--pink-light); }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 0 5%;
+    padding-top: 5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -10%; right: -5%;
+    width: 60%; height: 80%;
+    background: radial-gradient(ellipse at top right, rgba(232,85,122,0.08) 0%, transparent 65%);
+    pointer-events: none;
+  }
+  .hero-left {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-right: 4rem;
+    padding-top: 2rem;
+    padding-bottom: 4rem;
+  }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--pink);
+    margin-bottom: 2rem;
+  }
+  .tag::before {
+    content: '';
+    display: block;
+    width: 24px; height: 1px;
+    background: var(--pink);
+  }
+  .hero h1 {
+    font-family: var(--serif);
+    font-size: clamp(2.8rem, 5vw, 4.2rem);
+    font-weight: 500;
+    line-height: 1.12;
+    color: var(--cream);
+    margin-bottom: 1.5rem;
+  }
+  .hero h1 em {
+    font-style: italic;
+    color: var(--pink);
+  }
+  .hero-desc {
+    font-size: 1rem;
+    color: var(--text-light);
+    line-height: 1.8;
+    max-width: 440px;
+    margin-bottom: 2.5rem;
+  }
+  .hero-actions { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+  .btn-primary {
+    background: var(--pink);
+    color: #fff;
+    border: none;
+    padding: 1rem 2.2rem;
+    font-family: var(--sans);
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .btn-primary:hover { background: var(--pink-light); transform: translateY(-1px); }
+  .btn-secondary {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    transition: color 0.2s;
+    background: none; border: none;
+  }
+  .btn-secondary:hover { color: var(--cream); }
+
+  .hero-right {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 4rem 0;
+  }
+  .price-card {
+    background: var(--navy-mid);
+    border: 1px solid rgba(232,85,122,0.25);
+    padding: 2.5rem 2rem;
+    width: 300px;
+    position: relative;
+  }
+  .price-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--pink);
+  }
+  .price-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+  }
+  .price-name {
+    font-family: var(--serif);
+    font-size: 1.5rem;
+    font-style: italic;
+    color: var(--cream);
+    margin-bottom: 1.5rem;
+  }
+  .price-value {
+    display: flex;
+    align-items: baseline;
+    gap: 0.3rem;
+    margin-bottom: 1.5rem;
+  }
+  .price-currency {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-weight: 300;
+  }
+  .price-number {
+    font-family: var(--serif);
+    font-size: 3.2rem;
+    font-weight: 500;
+    color: var(--cream);
+    line-height: 1;
+  }
+  .price-note {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .price-includes {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 1.8rem;
+  }
+  .price-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.82rem;
+    color: var(--text-light);
+  }
+  .price-item::before {
+    content: '';
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--pink);
+    flex-shrink: 0;
+  }
+
+  /* DIVIDER */
+  .section-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(232,85,122,0.3), transparent);
+    margin: 0 5%;
+  }
+
+  /* SECTION BASE */
+  section {
+    padding: 6rem 5%;
+  }
+  .section-tag {
+    font-size: 0.7rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--pink);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .section-tag::before {
+    content: '';
+    display: block;
+    width: 20px; height: 1px;
+    background: var(--pink);
+  }
+  .section-title {
+    font-family: var(--serif);
+    font-size: clamp(2rem, 3.5vw, 2.8rem);
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--cream);
+    margin-bottom: 1.2rem;
+  }
+  .section-title em { font-style: italic; color: var(--pink); }
+  .section-sub {
+    font-size: 1rem;
+    color: var(--text-light);
+    line-height: 1.8;
+    max-width: 520px;
+  }
+
+  /* FOR WHOM */
+  .forwho-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+  }
+  .pain-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+  .pain-item {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    padding: 1.2rem 1.4rem;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-left: 3px solid var(--pink);
+    font-size: 0.92rem;
+    color: var(--text-light);
+    line-height: 1.6;
+  }
+
+  /* HOW IT WORKS */
+  .steps-section { background: var(--navy-mid); }
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin-top: 3rem;
+  }
+  .step-card {
+    padding: 2rem 1.8rem;
+    border: 1px solid rgba(255,255,255,0.06);
+    position: relative;
+  }
+  .step-number {
+    font-family: var(--serif);
+    font-size: 4rem;
+    font-weight: 600;
+    color: rgba(232,85,122,0.15);
+    line-height: 1;
+    margin-bottom: 1.2rem;
+    display: block;
+  }
+  .step-title {
+    font-family: var(--serif);
+    font-size: 1.3rem;
+    font-style: italic;
+    color: var(--cream);
+    margin-bottom: 0.8rem;
+  }
+  .step-desc {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+  .step-badge {
+    position: absolute;
+    top: 1.5rem; right: 1.5rem;
+    background: rgba(232,85,122,0.1);
+    color: var(--pink);
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.7rem;
+    font-weight: 500;
+  }
+
+  /* SESSION BREAKDOWN */
+  .session-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    margin-top: 3rem;
+    align-items: start;
+  }
+  .session-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .timeline-item {
+    display: flex;
+    gap: 1.5rem;
+    padding-bottom: 2rem;
+    position: relative;
+  }
+  .timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 1.25rem; top: 2.2rem;
+    width: 1px;
+    bottom: 0;
+    background: rgba(232,85,122,0.2);
+  }
+  .timeline-dot {
+    width: 2.5rem; height: 2.5rem;
+    min-width: 2.5rem;
+    border-radius: 50%;
+    border: 1px solid rgba(232,85,122,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    color: var(--pink);
+    font-weight: 500;
+  }
+  .timeline-content {}
+  .timeline-title {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--cream);
+    margin-bottom: 0.25rem;
+  }
+  .timeline-desc {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.65;
+  }
+  .deliverable-card {
+    background: var(--navy-mid);
+    border: 1px solid rgba(232,85,122,0.2);
+    padding: 2.5rem 2rem;
+  }
+  .deliverable-title {
+    font-family: var(--serif);
+    font-size: 1.4rem;
+    font-style: italic;
+    color: var(--cream);
+    margin-bottom: 0.5rem;
+  }
+  .deliverable-sub {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .deliverable-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+  .deliverable-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    font-size: 0.88rem;
+    color: var(--text-light);
+  }
+  .deliverable-icon {
+    width: 18px; height: 18px;
+    min-width: 18px;
+    background: rgba(232,85,122,0.12);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 3px;
+  }
+  .deliverable-icon::after {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--pink);
+  }
+
+  /* TESTIMONIAL QUOTE */
+  .quote-section {
+    text-align: center;
+    padding: 5rem 5%;
+    position: relative;
+    overflow: hidden;
+  }
+  .quote-section::before {
+    content: '"';
+    font-family: var(--serif);
+    font-size: 20rem;
+    color: rgba(232,85,122,0.04);
+    position: absolute;
+    top: -2rem; left: 50%;
+    transform: translateX(-50%);
+    line-height: 1;
+    pointer-events: none;
+  }
+  .quote-text {
+    font-family: var(--serif);
+    font-size: clamp(1.5rem, 2.5vw, 2rem);
+    font-style: italic;
+    color: var(--cream);
+    max-width: 680px;
+    margin: 0 auto 2rem;
+    line-height: 1.5;
+    position: relative;
+  }
+  .quote-text em { color: var(--pink); }
+
+  /* CTA */
+  .cta-section {
+    background: var(--navy-mid);
+    border-top: 1px solid rgba(232,85,122,0.15);
+    border-bottom: 1px solid rgba(232,85,122,0.15);
+    text-align: center;
+    padding: 6rem 5%;
+  }
+  .cta-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--pink);
+    margin-bottom: 1.5rem;
+  }
+  .cta-title {
+    font-family: var(--serif);
+    font-size: clamp(2.2rem, 4vw, 3.5rem);
+    font-weight: 500;
+    color: var(--cream);
+    line-height: 1.15;
+    max-width: 620px;
+    margin: 0 auto 1.5rem;
+  }
+  .cta-title em { font-style: italic; color: var(--pink); }
+  .cta-sub {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    margin-bottom: 2.5rem;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .cta-meta {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 1.5rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+  .cta-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .cta-meta span::before {
+    content: '';
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--pink);
+    opacity: 0.6;
+    display: block;
+  }
+
+  /* FOOTER */
+  footer {
+    padding: 2rem 5%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  footer .logo-f {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--cream);
+    font-size: 1rem;
+  }
+  footer .logo-f span { color: var(--pink); }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .hero { grid-template-columns: 1fr; min-height: auto; padding-top: 7rem; padding-bottom: 4rem; }
+    .hero-left { padding-right: 0; }
+    .hero-right { display: none; }
+    .forwho-grid, .session-grid { grid-template-columns: 1fr; gap: 2rem; }
+    .steps-grid { grid-template-columns: 1fr; }
+    nav { padding: 1rem 4%; }
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .hero-left > * {
+    animation: fadeUp 0.7s ease both;
+  }
+  .hero-left > *:nth-child(1) { animation-delay: 0.1s; }
+  .hero-left > *:nth-child(2) { animation-delay: 0.2s; }
+  .hero-left > *:nth-child(3) { animation-delay: 0.3s; }
+  .hero-left > *:nth-child(4) { animation-delay: 0.4s; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Dinheiro na <span>Mesa</span></div>
+  <a href="#cta" class="nav-cta">Quero participar</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="tag">Sessão individual · Diagnóstico financeiro</div>
+    <h1>Você ganha bem.<br>Mas o dinheiro <em>simplesmente some.</em></h1>
+    <p class="hero-desc">
+      Em uma única sessão, você descobre exatamente para onde seu dinheiro está indo — e recebe um plano claro do que fazer a partir de agora.
+    </p>
+    <div class="hero-actions">
+      <a href="#cta" class="btn-primary">Reservar minha vaga</a>
+      <button class="btn-secondary" onclick="document.getElementById('como-funciona').scrollIntoView({behavior:'smooth'})">Como funciona</button>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="price-card">
+      <div class="price-label">Protocolo</div>
+      <div class="price-name">Dinheiro na Mesa</div>
+      <div class="price-value">
+        <span class="price-currency">R$</span>
+        <span class="price-number">500</span>
+      </div>
+      <div class="price-note">Sessão individual · 60 minutos · Online</div>
+      <div class="price-includes">
+        <div class="price-item">Formulário de diagnóstico</div>
+        <div class="price-item">Análise completa da sua realidade</div>
+        <div class="price-item">Sessão 1:1 de 60 minutos</div>
+        <div class="price-item">Plano de ação com 3–5 prioridades</div>
+        <div class="price-item">Resumo pós-sessão via WhatsApp/PDF</div>
+      </div>
+      <a href="#cta" class="btn-primary" style="display:block;text-align:center;width:100%;">Quero participar</a>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- FOR WHOM -->
+<section>
+  <div class="forwho-grid">
+    <div>
+      <div class="section-tag">Para quem é</div>
+      <h2 class="section-title">Você se reconhece em <em>alguma dessas situações?</em></h2>
+    </div>
+    <div>
+      <div class="pain-list">
+        <div class="pain-item">O mês acaba antes do dinheiro acabar — e você não sabe explicar onde foi parar.</div>
+        <div class="pain-item">Você tem renda boa, mas não tem reserva. Qualquer imprevisto desestabiliza tudo.</div>
+        <div class="pain-item">Você já tentou se organizar várias vezes, mas a planilha fica abandonada na segunda semana.</div>
+        <div class="pain-item">Você sente que está sempre no limite — sem folga, sem liberdade, sem direção.</div>
+        <div class="pain-item">Você quer entender de uma vez por todas o que está travando sua vida financeira.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- HOW IT WORKS -->
+<section class="steps-section" id="como-funciona">
+  <div class="section-tag">Como funciona</div>
+  <h2 class="section-title">Simples, direto e <em>sem enrolação</em></h2>
+  <p class="section-sub">Sem planilha complicada pra preencher antes. Sem metodologia de 12 semanas. Uma sessão, um plano, resultado concreto.</p>
+  <div class="steps-grid">
+    <div class="step-card">
+      <span class="step-number">01</span>
+      <div class="step-badge">Antes</div>
+      <div class="step-title">Formulário inicial</div>
+      <p class="step-desc">Você preenche um formulário simples e envia os documentos básicos (extratos, faturas, comprovantes). Sem complicação — o que tiver já é suficiente.</p>
+    </div>
+    <div class="step-card">
+      <span class="step-number">02</span>
+      <div class="step-badge">Sessão</div>
+      <div class="step-title">60 minutos com diagnóstico real</div>
+      <p class="step-desc">Fazemos juntos uma leitura profunda da sua situação. Onde o dinheiro vai, o que está travando, quais são os padrões — sem julgamento, com clareza.</p>
+    </div>
+    <div class="step-card">
+      <span class="step-number">03</span>
+      <div class="step-badge">Depois</div>
+      <div class="step-title">Plano de ação nas suas mãos</div>
+      <p class="step-desc">Você recebe um resumo com os principais erros identificados, as prioridades e os próximos passos — por WhatsApp ou em PDF simples e direto.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SESSION BREAKDOWN -->
+<section>
+  <div class="section-tag">A sessão</div>
+  <h2 class="section-title">O que acontece <em>nos 60 minutos</em></h2>
+  <div class="session-grid">
+    <div class="session-timeline">
+      <div class="timeline-item">
+        <div class="timeline-dot">10'</div>
+        <div class="timeline-content">
+          <div class="timeline-title">Entendimento de contexto</div>
+          <div class="timeline-desc">Validamos o formulário e entendo sua realidade de perto — renda, rotina, comportamentos.</div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot">20'</div>
+        <div class="timeline-content">
+          <div class="timeline-title">Raio-X financeiro</div>
+          <div class="timeline-desc">Mapeamos para onde o dinheiro está indo, os padrões de comportamento e os erros principais.</div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot">15'</div>
+        <div class="timeline-content">
+          <div class="timeline-title">Diagnóstico central</div>
+          <div class="timeline-desc">Identificamos o problema central — o que realmente está travando sua vida financeira.</div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot">15'</div>
+        <div class="timeline-content">
+          <div class="timeline-title">Direcionamento prático</div>
+          <div class="timeline-desc">Você sai com 3 a 5 ações claras. O que fazer primeiro, como fazer, por onde começar agora.</div>
+        </div>
+      </div>
+    </div>
+    <div class="deliverable-card">
+      <div class="deliverable-title">O que você recebe</div>
+      <div class="deliverable-sub">Pós-sessão · Entregue em até 24h</div>
+      <div class="deliverable-list">
+        <div class="deliverable-item">
+          <div class="deliverable-icon"></div>
+          Resumo dos principais erros identificados
+        </div>
+        <div class="deliverable-item">
+          <div class="deliverable-icon"></div>
+          Plano de ação com prioridades
+        </div>
+        <div class="deliverable-item">
+          <div class="deliverable-icon"></div>
+          Próximos passos detalhados
+        </div>
+        <div class="deliverable-item">
+          <div class="deliverable-icon"></div>
+          Envio via WhatsApp ou PDF
+        </div>
+        <div class="deliverable-item">
+          <div class="deliverable-icon"></div>
+          Análise real da sua situação — não superficial
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- QUOTE -->
+<div class="quote-section">
+  <p class="quote-text">
+    "Você até pode tentar fazer sozinha.<br>Mas a maioria das pessoas não consegue manter <em>sem acompanhamento.</em>"
+  </p>
+</div>
+
+<!-- CTA -->
+<section class="cta-section" id="cta">
+  <div class="cta-label">Vagas limitadas</div>
+  <h2 class="cta-title">Pronta pra entender de vez <em>o que está acontecendo</em> com seu dinheiro?</h2>
+  <p class="cta-sub">Me chama no direct com a palavra <strong style="color:var(--cream)">PROTOCOLO</strong> — ou clica aqui para reservar sua vaga.</p>
+  <a href="https://wa.me/" class="btn-primary" style="font-size:0.85rem; padding:1.1rem 2.8rem;">Quero meu diagnóstico financeiro</a>
+  <div class="cta-meta">
+    <span>R$500 · sessão única</span>
+    <span>60 minutos online</span>
+    <span>Vagas limitadas</span>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="logo-f">Dinheiro na <span>Mesa</span></div>
+  <div>Protocolo de diagnóstico financeiro individual</div>
+</footer>
+
+</body>
+</html>
