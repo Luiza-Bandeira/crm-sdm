@@ -755,24 +755,9 @@
 <section class="cta-section" id="cta">
   <div class="cta-label">Vagas limitadas</div>
   <h2 class="cta-title">Pronta pra entender de vez <em>o que está acontecendo</em> com seu dinheiro?</h2>
-  <p class="cta-sub">Preencha seus dados abaixo para reservar sua vaga no diagnóstico individual.</p>
+  <p class="cta-sub">Reserve agora sua vaga para o diagnóstico individual e receba seu plano de ação exclusivo.</p>
   
-  <form id="leadForm" style="max-width: 400px; margin: 0 auto; text-align: left; background: rgba(255,255,255,0.03); padding: 2rem; border: 1px solid rgba(232,85,122,0.1); border-radius: 4px;">
-    <div style="margin-bottom: 1rem;">
-      <label style="display: block; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">Nome Completo</label>
-      <input type="text" name="nome_completo" required style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); padding: 0.8rem; color: #fff; outline: none;">
-    </div>
-    <div style="margin-bottom: 1rem;">
-      <label style="display: block; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">WhatsApp (com DDD)</label>
-      <input type="tel" name="telefone_whatsapp" placeholder="Ex: 11999999999" required style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); padding: 0.8rem; color: #fff; outline: none;">
-    </div>
-    <div style="margin-bottom: 1.5rem;">
-      <label style="display: block; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">E-mail</label>
-      <input type="email" name="email" required style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); padding: 0.8rem; color: #fff; outline: none;">
-    </div>
-    <button type="submit" class="btn-primary" style="width: 100%; font-size: 0.85rem; padding: 1.1rem;">Quero meu diagnóstico financeiro</button>
-    <div id="formMsg" style="margin-top: 1rem; font-size: 0.8rem; text-align: center; display: none;"></div>
-  </form>
+  <button onclick="openModal()" class="btn-primary" style="font-size:0.85rem; padding:1.1rem 2.8rem;">Quero meu diagnóstico financeiro</button>
 
   <div class="cta-meta">
     <span>R$500 · sessão única</span>
@@ -781,15 +766,72 @@
   </div>
 </section>
 
+<!-- MODAL DE CAPTURA -->
+<div id="leadModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(10,22,40,0.95); z-index:1000; backdrop-filter:blur(10px); align-items:center; justify-content:center;">
+  <div style="background:var(--navy-mid); width:90%; max-width:450px; padding:3rem 2rem; border:1px solid rgba(232,85,122,0.3); border-radius:8px; position:relative; animation:fadeUp 0.4s ease;">
+    <button onclick="closeModal()" style="position:absolute; top:1.5rem; right:1.5rem; background:none; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;">&times;</button>
+    
+    <div style="text-align:center; margin-bottom:2rem;">
+      <div class="section-tag" style="justify-content:center; margin-bottom:0.5rem;">Sessão Individual</div>
+      <h3 style="font-family:var(--serif); font-size:1.8rem; color:var(--cream); font-style:italic;">Quase lá...</h3>
+      <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.5rem;">Preencha seus dados para a Laura te chamar no WhatsApp.</p>
+    </div>
+
+    <form id="modalLeadForm" style="text-align: left;">
+      <div style="margin-bottom: 1.2rem;">
+        <label style="display: block; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing:0.1em;">Nome Completo</label>
+        <input type="text" name="nome_completo" required style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 1rem; color: #fff; outline: none; border-radius:4px;">
+      </div>
+      <div style="margin-bottom: 1.2rem;">
+        <label style="display: block; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing:0.1em;">WhatsApp (com DDD)</label>
+        <input type="tel" name="telefone_whatsapp" placeholder="Ex: 11999999999" required style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 1rem; color: #fff; outline: none; border-radius:4px;">
+      </div>
+      <div style="margin-bottom: 2rem;">
+        <label style="display: block; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing:0.1em;">E-mail Principal</label>
+        <input type="email" name="email" required style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 1rem; color: #fff; outline: none; border-radius:4px;">
+      </div>
+      
+      <button type="submit" class="btn-primary" style="width: 100%; font-size: 0.85rem; padding: 1.2rem;">Garantir minha Sessão</button>
+      <div id="modalFormMsg" style="margin-top: 1.5rem; font-size: 0.85rem; text-align: center; display: none; line-height: 1.5;"></div>
+    </form>
+  </div>
+</div>
+
 <script>
-document.getElementById('leadForm').addEventListener('submit', async function(e) {
+function openModal() {
+  document.getElementById('leadModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('leadModal').style.display = 'none';
+  document.body.style.overflow = 'auto';
+}
+
+// Fechar ao clicar fora
+window.onclick = function(event) {
+  const modal = document.getElementById('leadModal');
+  if (event.target == modal) closeModal();
+}
+
+// Listener para todos os botões da página que devem abrir o modal
+document.querySelectorAll('a[href="#cta"], .btn-primary:not([type="submit"])').forEach(btn => {
+  if (btn.tagName === 'A' || !btn.closest('form')) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      openModal();
+    });
+  }
+});
+
+document.getElementById('modalLeadForm').addEventListener('submit', async function(e) {
   e.preventDefault();
   const btn = this.querySelector('button');
-  const msg = document.getElementById('formMsg');
+  const msg = document.getElementById('modalFormMsg');
   const originalText = btn.textContent;
   
   btn.disabled = true;
-  btn.textContent = 'Enviando...';
+  btn.textContent = 'Processando...';
   msg.style.display = 'none';
 
   const formData = new FormData(this);
@@ -797,7 +839,7 @@ document.getElementById('leadForm').addEventListener('submit', async function(e)
     nome_completo: formData.get('nome_completo'),
     telefone_whatsapp: formData.get('telefone_whatsapp'),
     email: formData.get('email'),
-    canal_origem: 'lp_sessao_individual',
+    canal_origem: 'lp_sessao_individual_popup',
     product_id: 'sessao_individual'
   };
 
@@ -811,19 +853,20 @@ document.getElementById('leadForm').addEventListener('submit', async function(e)
     if (!response.ok) throw new Error('Erro ao enviar');
 
     msg.style.color = '#22c55e';
-    msg.textContent = 'Sucesso! Laura entrará em contato com você no WhatsApp em instantes.';
+    msg.innerHTML = '✨ <strong>Sucesso!</strong><br>Laura já está preparando sua mensagem. Olhe seu WhatsApp em 30 segundos!';
     msg.style.display = 'block';
     this.reset();
     
-    // Opcional: Redirecionar após alguns segundos ou mostrar check
     setTimeout(() => {
+      closeModal();
       btn.disabled = false;
       btn.textContent = originalText;
-    }, 3000);
+      msg.style.display = 'none';
+    }, 4000);
 
   } catch (err) {
     msg.style.color = '#ef4444';
-    msg.textContent = 'Erro ao enviar dados. Tente novamente ou nos chame no WhatsApp.';
+    msg.textContent = 'Ocorreu um erro. Por favor, tente novamente ou nos chame no direct.';
     msg.style.display = 'block';
     btn.disabled = false;
     btn.textContent = originalText;
