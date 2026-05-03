@@ -40,7 +40,10 @@ serve(async (req) => {
 
     // Validação
     if (!telefone_whatsapp) {
-      return Response.json({ error: 'telefone_whatsapp obrigatório' }, { status: 400 });
+      return new Response(
+        JSON.stringify({ error: 'telefone_whatsapp obrigatório' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Limpa o telefone (só números)
@@ -103,16 +106,22 @@ serve(async (req) => {
       await logActivity(leadId, 'stage_change', `Lead criado via "${canal_origem || 'landing_page'}" (Produto: ${productId})`, null, STAGES.NOVO_LEAD);
 
       console.log(`[webhook-lead] Novo lead criado: ${leadId} | ${phone}`);
-
-      // ── Dispara primeira mensagem ───────────
-      await triggerFirstMessage(leadId, phone, productId, nome_completo);
     }
 
-    return Response.json({ success: true, lead_id: leadId });
+    // ── Dispara primeira mensagem (Sempre que houver interação com a LP) ───
+    await triggerFirstMessage(leadId, phone, productId, nome_completo);
+
+    return new Response(
+      JSON.stringify({ success: true, lead_id: leadId }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
 
   } catch (err) {
     console.error('[webhook-lead] Erro:', err);
-    return Response.json({ error: err.message }, { status: 500 });
+    return new Response(
+      JSON.stringify({ error: err.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 });
 
