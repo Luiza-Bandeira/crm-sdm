@@ -61,7 +61,7 @@ function buildSystemPrompt(state: AgentState, lead: Lead, availabilitySlots: any
 - Nome: ${product.name}
 - Descrição: ${product.description}
 - Preço/Condições: ${product.price_text}
-- Link de Inscrição: ${product.payment_link}
+- Link de Inscrição: ${product.payment_link}${product.payment_link.includes('?') ? '&' : '?'}client_reference_id=${lead.id}
 `;
 
   // Gera os próximos slots disponíveis a partir de hoje

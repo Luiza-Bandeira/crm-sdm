@@ -14,31 +14,63 @@ serve(async (req) => {
     const body = await req.json();
     console.log('[webhook-payment] Recebido:', JSON.stringify(body));
 
-    // Lógica simplificada para identificar o lead pelo telefone ou email
-    // No Stripe, geralmente passamos o lead_id no client_reference_id
-    const leadId = body.data?.object?.client_reference_id || body.lead_id;
-    const email  = body.data?.object?.customer_details?.email || body.email;
+    let leadId: string | null = null;
+    let paymentId: string | null = null;
+    let isApproved = false;
 
-    if (!leadId && !email) {
+    // ── Lógica MERCADO PAGO ────────────────────────────────
+    if (body.action && body.data?.id) {
+      console.log('[webhook-payment] Processando Mercado Pago...');
+      paymentId = body.data.id;
+      
+      const mpToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN');
+      if (!mpToken) {
+        console.error('[webhook-payment] MERCADO_PAGO_ACCESS_TOKEN não configurado');
+        return Response.json({ error: 'Configuração pendente' }, { status: 500 });
+      }
+
+      // Consulta o status real do pagamento na API do MP
+      const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+        headers: { Authorization: `Bearer ${mpToken}` }
+      });
+      const mpData = await mpRes.json();
+      
+      isApproved = (mpData.status === 'approved');
+      leadId = mpData.external_reference; // Usamos external_reference para o ID do lead
+    } 
+    // ── Lógica STRIPE (Fallback) ───────────────────────────
+    else {
+      leadId = body.data?.object?.client_reference_id || body.lead_id;
+      paymentId = body.id || body.data?.object?.id;
+      isApproved = true; // No Stripe simplificado assumimos que o evento é de sucesso
+    }
+
+    if (!leadId) {
+      console.error('[webhook-payment] Lead ID não encontrado no payload');
       return Response.json({ error: 'Identificador do lead não encontrado' }, { status: 400 });
     }
 
-    // 1. Localiza o lead
-    let query = supabase.from('leads').select('*, products(*)');
-    if (leadId) query = query.eq('id', leadId);
-    else query = query.eq('email', email);
+    if (!isApproved) {
+      console.log('[webhook-payment] Pagamento ainda não aprovado:', paymentId);
+      return Response.json({ success: true, message: 'Aguardando aprovação' });
+    }
 
-    const { data: lead, error: leadError } = await query.maybeSingle();
+    // 1. Localiza o lead
+    const { data: lead, error: leadError } = await supabase
+      .from('leads')
+      .select('*, products(*)')
+      .eq('id', leadId)
+      .maybeSingle();
 
     if (leadError || !lead) {
-      console.error('[webhook-payment] Lead não encontrado:', leadId || email);
+      console.error('[webhook-payment] Lead não encontrado:', leadId);
       return Response.json({ error: 'Lead não encontrado' }, { status: 404 });
     }
 
     // 2. Atualiza status de pagamento
     await supabase.from('leads').update({
       stage_id: STAGES.GANHO,
-      payment_id: body.id || body.data?.object?.id,
+      payment_id: paymentId,
       metadata: { ...lead.metadata, paid: true, paid_at: new Date().toISOString() }
     }).eq('id', lead.id);
 
