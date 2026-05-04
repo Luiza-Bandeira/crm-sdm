@@ -122,6 +122,14 @@ serve(async (req) => {
 
         await sendWhatsApp(lead.phone, msg);
         console.log('[webhook-payment] WhatsApp enviado para:', lead.phone);
+
+        // Salva a mensagem no histórico do CRM para visibilidade total
+        await supabase.from('conversations').insert({
+          lead_id: lead.id,
+          role: 'assistant',
+          content: msg,
+          channel: 'whatsapp'
+        });
       } catch (wsError) {
         console.error('[webhook-payment] Erro ao enviar WhatsApp:', wsError);
       }
