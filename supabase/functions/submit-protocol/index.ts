@@ -29,16 +29,23 @@ serve(async (req) => {
       .single();
 
     let driveLink = null;
-    if (lead?.drive_folder_url) {
-      // Extrai ID da pasta da URL: https://drive.google.com/drive/folders/ID
-      const folderId = lead.drive_folder_url.split('/').pop();
-      
-      console.log('[submit-protocol] Folder ID extraído:', folderId);
-      if (folderId && folderId !== 'undefined') {
-        const timestamp = new Date().toLocaleDateString('pt-BR');
+    let folderUrl = lead?.drive_folder_url;
+
+    // Se o lead não tem pasta ou é a pasta antiga (sem quota), cria uma nova
+    if (!folderUrl || folderUrl.includes('undefined')) {
+      const { createClientFolder } = await import('../_shared/google_drive.ts');
+      folderUrl = await createClientFolder(lead.name || 'Cliente');
+      if (folderUrl) {
+        await supabase.from('leads').update({ drive_folder_url: folderUrl }).eq('id', lead_id);
+      }
+    }
+
+    if (folderUrl) {
+      const folderId = folderUrl.match(/folders\/([^/?]+)/)?.[1];
+      if (folderId) {
+        const timestamp = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
         const fileName = `Respostas Protocolo - ${lead.name} - ${timestamp}.html`;
         
-        // Gera um HTML simples com as respostas
         let htmlContent = `<html><body style="font-family: sans-serif; padding: 40px; line-height: 1.6;">`;
         htmlContent += `<h1 style="color: #e8557a;">Protocolo Dinheiro na Mesa</h1>`;
         htmlContent += `<h2>Diagnóstico de ${lead.name}</h2>`;
@@ -62,12 +69,9 @@ serve(async (req) => {
         form_at: new Date().toISOString(),
         answers: answers,
         responses_drive_link: driveLink
-      } 
+      },
+      notes: (lead?.notes ? lead.notes + '\n\n' : '') + `📄 Respostas do Protocolo: ${driveLink || 'Falha ao salvar no Drive (verifique cota/permissão)'}`
     };
-
-    if (driveLink) {
-      updateData.notes = (lead?.notes ? lead.notes + '\n\n' : '') + `📄 Respostas do Protocolo: ${driveLink}`;
-    }
 
     const { error } = await supabase
       .from('leads')
