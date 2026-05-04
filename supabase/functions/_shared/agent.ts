@@ -44,10 +44,11 @@ Seu tom é caloroso, direto e honesto — como uma amiga que entende de dinheiro
 
 ## PRODUTO: Dinheiro na Mesa
 - Sessão individual com a Luiza (aproximadamente 1 hora)
-- Diagnóstico completo baseado nos documentos financeiros do cliente
+- Diagnóstico completo baseado nos documentos financeiros do cliente (últimos 3 meses)
 - Entrega de dashboard financeiro com números organizados
-- 3 a 5 ações práticas
-- Mapa de projeção para 2, 5 e 10 anos
+- 3 a 5 ações práticas de ajuste imediato
+- Mapa de projeção financeira para 2, 5 e 10 anos
+- Acesso a uma pasta exclusiva para subir documentos e formulário detalhado
 - Valor: R$500
 - Pagamento antecipado para garantir a vaga
 
@@ -102,7 +103,7 @@ function buildSystemPrompt(state: AgentState, lead: Lead, availabilitySlots: any
 - Preço/Condições: ${product.price_text}
 - Link de Inscrição: 
 ${product.payment_link}
-(IMPORTANTE: Sempre envie este link em uma linha isolada. Se o link for do Mercado Pago, você DEVE anexar &external_reference=${lead.id} ao final se ele já tiver um ?, ou ?external_reference=${lead.id} se não tiver).
+(IMPORTANTE: Sempre envie este link EXATAMENTE como fornecido acima, em uma linha isolada e sem modificações. Ele já contém todos os parâmetros necessários para identificação do lead).
 `;
 
   // Gera os próximos slots disponíveis a partir de hoje
@@ -234,11 +235,37 @@ export async function generateAgentReply(
   const productId = lead.product_id || 'sessao_individual'; // Default alterado para sessao_individual para segurança
   console.log(`[generateAgentReply] Lead ID: ${lead.id}, ProductID: ${productId}`);
 
-  const { data: product } = await supabase
+  const { data: productRaw } = await supabase
     .from('products')
     .select('*')
     .eq('id', productId)
     .maybeSingle();
+
+  const product = productRaw ? { ...productRaw } : null;
+
+  // OVERRIDE DE SEGURANÇA: Garante que o link e nome estejam corretos mesmo que o banco esteja desatualizado
+  if (product) {
+    if (product.id === 'sessao_individual') {
+      product.name = 'Protocolo Dinheiro na Mesa';
+      if (!product.payment_link || product.payment_link.includes('stripe.com/test_example')) {
+        product.payment_link = 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=2631945277-b12d9ad4-02ec-486f-b02c-51da79714b61';
+      }
+    }
+  }
+
+  // Prepara o link final com external_reference para evitar erros de separador (? ou &)
+  let finalPaymentLink = product?.payment_link || 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=2631945277-b12d9ad4-02ec-486f-b02c-51da79714b61';
+  
+  try {
+    const url = new URL(finalPaymentLink);
+    url.searchParams.set('external_reference', lead.id);
+    finalPaymentLink = url.toString();
+  } catch (err) {
+    console.error('[agent] Erro ao formatar URL:', err);
+    // Fallback simples se URL falhar
+    const separator = finalPaymentLink.includes('?') ? '&' : '?';
+    finalPaymentLink = `${finalPaymentLink}${separator}external_reference=${lead.id}`;
+  }
 
   if (!product) {
     console.error(`[generateAgentReply] CRITICAL: Product not found for ID: ${productId}`);
@@ -247,13 +274,13 @@ export async function generateAgentReply(
   // 2. Busca horários disponíveis
   const { data: slots } = await supabase.from('availability_slots').select('*');
   
-  const systemPrompt = buildSystemPrompt(state, lead, slots || [], product || {
-    id: 'sessao_individual',
-    name: 'Dinheiro na Mesa',
-    description: 'Sessão individual + Protocolo Financeiro',
-    price_text: 'R$ 500',
-    payment_link: '#'
-  });
+  const systemPrompt = buildSystemPrompt(state, lead, slots || [], {
+    ...(product || {}),
+    id: productId,
+    name: product?.name || 'Protocolo Dinheiro na Mesa',
+    price_text: product?.price_text || 'R$ 500',
+    payment_link: finalPaymentLink
+  } as any);
   
   const messages = [
     { role: 'system', content: systemPrompt },

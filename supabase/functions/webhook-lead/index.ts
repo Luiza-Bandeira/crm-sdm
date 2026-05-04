@@ -133,23 +133,27 @@ async function triggerFirstMessage(leadId: string, phone: string, productId: str
 
   // 1. Busca dados do produto
   const { data: product } = await supabase.from('products').select('*').eq('id', productId).maybeSingle();
-  const productName = product?.name || 'Dinheiro na Mesa';
+  const productName = product?.name || 'Protocolo Dinheiro na Mesa';
   
   // 2. USA O LINK DE PAGAMENTO CADASTRADO NO PRODUTO
-  let paymentLink = product?.payment_link || '';
+  let paymentLink = product?.payment_link || 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=2631945277-b12d9ad4-02ec-486f-b02c-51da79714b61';
   
-  // Tenta anexar o external_reference para manter a automação funcionando
-  if (paymentLink && paymentLink.includes('mercadopago') && !paymentLink.includes('external_reference')) {
-    const separator = paymentLink.includes('?') ? '&' : '?';
-    paymentLink = `${paymentLink}${separator}external_reference=${leadId}`;
+  // Se o link do banco for o de teste, força o real
+  if (paymentLink.includes('stripe.com/test_example')) {
+    paymentLink = 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=2631945277-b12d9ad4-02ec-486f-b02c-51da79714b61';
   }
 
   let msg = '';
   if (productId === 'sessao_individual') {
-    msg = `${saudacao} Vi que você se interessou pelo *Dinheiro na Mesa*. Fico muito feliz!\n\n` +
-          `Para te ajudar da melhor forma nessa consultoria 1 a 1, preciso entender o que te trouxe até aqui hoje.\n\n` +
-          `Como está a sua vida financeira no momento? Você sente que tem controle total ou está buscando organizar as contas primeiro?\n\n` +
-          `Ah, se você já quiser garantir sua vaga agora, aqui está o seu link pessoal de inscrição:\n\n${paymentLink}`;
+    msg = `Oi ${firstName || ''}! Eu sou a Laura, assistente pessoal da Luiza.\n\n` +
+          `Vou te explicar como funciona o *Protocolo Dinheiro na Mesa*.\n\n` +
+          `Assim que você entra no nosso sistema, o formulário detalhado é liberado pra você, junto com uma pasta exclusiva na nossa plataforma. Nessa pasta você vai colocar seus arquivos financeiros dos últimos 3 meses — faturas, extratos, contas e o que mais tiver.\n\n` +
+          `Com os documentos disponíveis, a Luiza faz o seu diagnóstico completo e define o que precisa ser ajustado na sua realidade financeira. Depois, ela te apresenta tudo isso numa reunião de aproximadamente 1 hora, onde você tira suas dúvidas e já sai com condições de aplicar o que é preciso.\n\n` +
+          `No final, você recebe:\n` +
+          `- Seu dashboard financeiro com seus números organizados\n` +
+          `- De 3 a 5 ações práticas\n` +
+          `- Um mapa de projeção financeira para os próximos 2, 5 e 10 anos\n\n` +
+          `Me conta: você tem alguma dúvida ou podemos seguir com o cadastro?`;
   } else {
     msg = `${saudacao} Vi que você se interessou pelo *${productName}*. Fico feliz que chegou até aqui!\n\n` +
           `Antes de te contar tudo sobre o programa, quero entender melhor a sua situação.\n\n` +
