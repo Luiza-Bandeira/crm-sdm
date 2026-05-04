@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { X, Phone, MessageCircle, User, Clock, Edit3, Save, Trash2, ChevronDown, CheckSquare, Power, Plus, Check, FileText } from 'lucide-react'
+import { X, Phone, MessageCircle, User, Clock, Edit3, Save, Trash2, ChevronDown, CheckSquare, Power, Plus, Check, FileText, Download } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Lead, Conversation, PipelineStage, Task } from '../lib/supabase'
 
@@ -118,6 +118,32 @@ export default function LeadModal({ lead, stages, onClose, onUpdate, onDelete }:
     await supabase.from('tasks').delete().eq('id', id)
   }
 
+  function handleDownloadProtocol() {
+    if (!lead.metadata?.answers) return
+    
+    let textContent = `PROTOCOLO DE CLAREZA FINANCEIRA\n`
+    textContent += `Data: ${lead.metadata.form_at ? new Date(lead.metadata.form_at).toLocaleString('pt-BR') : ''}\n`
+    textContent += `Lead: ${lead.name} (${lead.phone})\n\n`
+    
+    Object.entries(lead.metadata.answers).forEach(([key, value]) => {
+      if (value && (Array.isArray(value) ? (value as any[]).some(Boolean) : String(value).trim())) {
+        const formattedKey = key.replace(/_/g, ' ').replace(/\[\]/g, '').toUpperCase()
+        const formattedValue = Array.isArray(value) ? (value as any[]).filter(Boolean).join(', ') : String(value)
+        textContent += `${formattedKey}:\n${formattedValue}\n\n`
+      }
+    })
+    
+    const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `protocolo_${lead.name?.replace(/\s+/g, '_') || lead.id}.txt`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
   function timeFormat(iso: string) {
     return new Date(iso).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
   }
@@ -215,9 +241,19 @@ export default function LeadModal({ lead, stages, onClose, onUpdate, onDelete }:
 
               {lead.metadata?.form_submitted && lead.metadata?.answers && (
                 <div className="field-group" style={{ marginTop: '4px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--green)' }}>
-                    <FileText size={13} /> Protocolo Preenchido · {lead.metadata.form_at ? new Date(lead.metadata.form_at).toLocaleString('pt-BR') : ''}
-                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--green)', margin: 0 }}>
+                      <FileText size={13} /> Protocolo Preenchido · {lead.metadata.form_at ? new Date(lead.metadata.form_at).toLocaleString('pt-BR') : ''}
+                    </label>
+                    <button 
+                      onClick={handleDownloadProtocol}
+                      className="btn btn-ghost" 
+                      style={{ padding: '4px 8px', fontSize: '11px', height: 'auto', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      title="Baixar respostas em TXT"
+                    >
+                      <Download size={12} /> Baixar .txt
+                    </button>
+                  </div>
                   <div style={{ background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
                     {Object.entries(lead.metadata.answers)
                       .filter(([, v]) => v && (Array.isArray(v) ? (v as any[]).some(Boolean) : String(v).trim()))
