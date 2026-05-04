@@ -130,15 +130,50 @@ async function triggerFirstMessage(leadId: string, phone: string, productId: str
   const firstName = name?.split(' ')[0] || '';
   const saudacao  = firstName ? `Oi ${firstName}! 👋` : 'Olá! 👋';
 
-  // Busca dados do produto para personalizar
-  const { data: product } = await supabase.from('products').select('name').eq('id', productId).maybeSingle();
-  const productName = product?.name || 'Seu Dinheiro na Mesa';
+  // 1. Busca dados do produto
+  const { data: product } = await supabase.from('products').select('*').eq('id', productId).maybeSingle();
+  const productName = product?.name || 'Protocolo de Clareza Financeira';
+  
+  // 2. GERA LINK DE PAGAMENTO DINÂMICO (Mercado Pago)
+  let paymentLink = product?.payment_link;
+  const mpToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN');
+
+  if (mpToken && productId === 'sessao_individual') {
+    try {
+      const mpRes = await fetch('https://api.mercadopago.com/checkout/preferences', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${mpToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          items: [{
+            title: productName,
+            quantity: 1,
+            unit_price: 500.00,
+            currency_id: 'BRL'
+          }],
+          external_reference: leadId, // CRITICAL: Vincula o pagamento ao Lead
+          back_urls: {
+            success: `https://crm-sdm.vercel.app/Sessaoindividual/formulario-protocolo.html?id=${leadId}`
+          },
+          auto_return: 'approved',
+          notification_url: 'https://ekyisfmxmxcwtgdwvfen.supabase.co/functions/v1/webhook-payment'
+        })
+      });
+      const mpData = await mpRes.json();
+      if (mpData.init_point) paymentLink = mpData.init_point;
+    } catch (err) {
+      console.error('[webhook-lead] Erro ao gerar link MP:', err);
+    }
+  }
 
   let msg = '';
   if (productId === 'sessao_individual') {
-    msg = `${saudacao} Vi que você se interessou pela *Sessão Individual do Protocolo Financeiro*. Fico muito feliz!\n\n` +
+    msg = `${saudacao} Vi que você se interessou pelo *Protocolo de Clareza Financeira*. Fico muito feliz!\n\n` +
           `Para te ajudar da melhor forma nessa consultoria 1 a 1, preciso entender o que te trouxe até aqui hoje.\n\n` +
-          `Como está a sua vida financeira no momento? Você sente que tem controle total ou está buscando organizar as contas primeiro?`;
+          `Como está a sua vida financeira no momento? Você sente que tem controle total ou está buscando organizar as contas primeiro?\n\n` +
+          `*(Ah, se você já quiser garantir sua vaga agora, aqui está o seu link pessoal de inscrição: ${paymentLink} )*`;
   } else {
     msg = `${saudacao} Vi que você se interessou pelo *${productName}*. Fico feliz que chegou até aqui!\n\n` +
           `Antes de te contar tudo sobre o programa, quero entender melhor a sua situação.\n\n` +

@@ -140,10 +140,22 @@ select option { background: #162540; color: var(--cream); }
 <div id="formView">
 
 <div class="form-header">
-  <div class="header-tag">Protocolo Dinheiro na Mesa</div>
+  <div class="header-tag">Protocolo de Clareza Financeira</div>
   <h1>Formulário de <em>diagnóstico</em></h1>
-  <p>Responda com calma — quanto mais contexto você trouxer, mais certeira será nossa sessão. Não precisa ser perfeito.</p>
+  <p>Para sua segurança e organização, valide seu acesso com o e-mail usado na compra.</p>
 </div>
+
+<!-- TELA DE ACESSO -->
+<div id="accessBlock" class="section-block" style="max-width: 400px; margin: 0 auto 3rem; text-align: center;">
+  <div class="step-card" style="padding: 2rem;">
+    <div class="q-label" style="margin-bottom: 1.5rem;">Acesse seu Protocolo</div>
+    <input type="email" id="accessEmail" placeholder="seu@email.com" style="margin-bottom: 1rem; text-align: center;">
+    <button type="button" id="btnValidate" class="submit-btn" style="padding: 0.8rem;">Validar E-mail</button>
+    <div id="accessError" style="color: var(--pink); font-size: 0.8rem; margin-top: 1rem; display: none;">E-mail não encontrado ou pagamento pendente.</div>
+  </div>
+</div>
+
+<div id="questionsArea" style="display: none;">
 
 <form id="mainForm" novalidate>
 
@@ -468,6 +480,8 @@ select option { background: #162540; color: var(--cream); }
   <div class="submit-meta">Suas respostas são confidenciais e usadas exclusivamente para a sessão.</div>
 </div>
 
+</div> <!-- Fim do questionsArea -->
+
 </form>
 </div>
 
@@ -558,15 +572,55 @@ document.getElementById('mainForm').addEventListener('submit', async function(e)
   submitBtn.disabled = true;
   submitBtn.textContent = 'Enviando...';
 
-  // Captura o lead_id da URL
-  const urlParams = new URLSearchParams(window.location.search);
-  const leadId = urlParams.get('id');
+  // Lógica de Validação de Acesso
+  const btnValidate = document.getElementById('btnValidate');
+  const accessEmail = document.getElementById('accessEmail');
+  const accessError = document.getElementById('accessError');
+  const questionsArea = document.getElementById('questionsArea');
+  const accessBlock = document.getElementById('accessBlock');
+  let currentLeadId = null;
 
-  if (!leadId) {
-    alert('Erro: ID do lead não encontrado na URL. Por favor, acesse pelo link enviado no WhatsApp.');
-    submitBtn.disabled = false;
-    submitBtn.textContent = originalText;
-    return;
+  btnValidate.addEventListener('click', async () => {
+    const email = accessEmail.value.trim();
+    if (!email) return;
+
+    btnValidate.disabled = true;
+    btnValidate.textContent = 'Verificando...';
+    accessError.style.display = 'none';
+
+    try {
+      const res = await fetch('https://ekyisfmxmxcwtgdwvfen.supabase.co/functions/v1/validate-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        currentLeadId = data.lead_id;
+        accessBlock.style.display = 'none';
+        questionsArea.style.display = 'block';
+        if (data.drive_folder_url) {
+          document.getElementById('driveLink').value = data.drive_folder_url;
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        accessError.style.display = 'block';
+      }
+    } catch (err) {
+      accessError.textContent = 'Erro ao conectar. Tente novamente.';
+      accessError.style.display = 'block';
+    } finally {
+      btnValidate.disabled = false;
+      btnValidate.textContent = 'Validar E-mail';
+    }
+  });
+
+  // Captura o lead_id da URL (opcional se já tiver o e-mail)
+  const urlParams = new URLSearchParams(window.location.search);
+  const leadIdFromUrl = urlParams.get('id');
+  if (leadIdFromUrl) {
+    // Se vier ID na URL, poderíamos pré-validar ou preencher o e-mail
   }
 
   // Coleta dados do formulário
@@ -590,7 +644,7 @@ document.getElementById('mainForm').addEventListener('submit', async function(e)
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        lead_id: leadId,
+        lead_id: currentLeadId,
         answers: answers
       })
     });
