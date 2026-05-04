@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { X, Phone, MessageCircle, User, Clock, Edit3, Save, Trash2, ChevronDown, CheckSquare, Power, Plus, Check } from 'lucide-react'
+import { X, Phone, MessageCircle, User, Clock, Edit3, Save, Trash2, ChevronDown, CheckSquare, Power, Plus, Check, FileText } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Lead, Conversation, PipelineStage, Task } from '../lib/supabase'
 
@@ -144,15 +144,26 @@ export default function LeadModal({ lead, stages, onClose, onUpdate, onDelete }:
           </div>
           <div className="modal-actions-top">
             {!isNew && (
-              <button 
-                onClick={handleAgentToggle} 
-                className={`btn ${agentActive ? 'btn-ghost' : 'btn-danger'}`} 
-                style={{ padding: '8px 12px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
-                title={agentActive ? 'Desativar Agente IA para este lead' : 'Ativar Agente IA para este lead'}
-              >
-                <Power size={13} color={agentActive ? 'var(--green)' : 'currentColor'} /> 
-                {agentActive ? 'IA Ativa' : 'IA Pausada'}
-              </button>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                {lead.metadata?.form_submitted && (
+                  <button 
+                    className="btn btn-primary"
+                    style={{ background: 'var(--accent)', color: '#fff', border: 'none' }}
+                    onClick={() => window.open(`/protocolo/${lead.id}`, '_blank')}
+                  >
+                    <FileText size={13} /> Ver Protocolo
+                  </button>
+                )}
+                <button 
+                  onClick={handleAgentToggle} 
+                  className={`btn ${agentActive ? 'btn-ghost' : 'btn-danger'}`} 
+                  style={{ padding: '8px 12px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  title={agentActive ? 'Desativar Agente IA para este lead' : 'Ativar Agente IA para este lead'}
+                >
+                  <Power size={13} color={agentActive ? 'var(--green)' : 'currentColor'} /> 
+                  {agentActive ? 'IA Ativa' : 'IA Pausada'}
+                </button>
+              </div>
             )}
             {!editing ? (
               <button className="btn btn-ghost" onClick={() => setEditing(true)}><Edit3 size={13} />Editar</button>
