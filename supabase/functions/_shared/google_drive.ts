@@ -13,6 +13,13 @@ async function getAccessToken() {
   }
 
   const now = Math.floor(Date.now() / 1000);
+  const pem = serviceAccount.private_key.replace(/\\n/g, "\n");
+  const base64 = pem
+    .replace(/-----BEGIN PRIVATE KEY-----/, "")
+    .replace(/-----END PRIVATE KEY-----/, "")
+    .replace(/\s/g, "");
+  const binaryDer = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+
   const jwt = await create(
     { alg: "RS256", typ: "JWT" },
     {
@@ -24,7 +31,7 @@ async function getAccessToken() {
     },
     await crypto.subtle.importKey(
       "pkcs8",
-      new TextEncoder().encode(serviceAccount.private_key.replace(/\\n/g, "\n")),
+      binaryDer,
       { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
       true,
       ["sign"]
@@ -60,7 +67,18 @@ export async function createClientFolder(clientName: string) {
     }),
   });
 
-  const folder = await res.json();
+  const resText = await res.text();
+  console.log('[google-drive] Resposta bruta:', resText);
+  let folder;
+  try {
+    folder = JSON.parse(resText);
+  } catch (e) {
+    throw new Error(`Erro ao parsear JSON do Drive: ${resText}`);
+  }
+  
+  if (!folder.id) {
+    throw new Error(`Falha ao criar pasta. Status: ${res.status}. Resposta: ${resText}`);
+  }
   
   // Tornar a pasta acessível via link (Leitor para qualquer pessoa com o link)
   // Nota: Isso é opcional, você pode preferir convidar o e-mail do cliente.

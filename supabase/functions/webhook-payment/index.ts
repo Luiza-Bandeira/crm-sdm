@@ -14,6 +14,15 @@ serve(async (req) => {
     const body = await req.json();
     console.log('[webhook-payment] Recebido:', JSON.stringify(body));
 
+    // Garantir que o produto existe no banco
+    await supabase.from('products').upsert({
+      id: 'sessao_individual',
+      name: 'Protocolo Dinheiro na Mesa',
+      price_text: 'R$ 500,00',
+      payment_link: 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=2631945277-b12d9ad4-02ec-486f-b02c-51da79714b61',
+      form_link: 'https://www.protocolo.luizabandeira.com.br/Sessaoindividual/formulario-protocolo'
+    });
+
     let leadId: string | null = null;
     let paymentId: string | null = null;
     let isApproved = false;
@@ -80,22 +89,36 @@ serve(async (req) => {
     if (lead.product_id === 'sessao_individual') {
       console.log('[webhook-payment] Iniciando onboarding Sessão Individual...');
       
-      // Criar pasta no Drive
-      const folderUrl = await createClientFolder(lead.name || 'Cliente');
+      let folderUrl = lead.drive_folder_url;
       
-      if (folderUrl) {
-        await supabase.from('leads').update({ drive_folder_url: folderUrl }).eq('id', lead.id);
+      try {
+        if (!folderUrl) {
+          console.log('[webhook-payment] Criando pasta no Drive...');
+          folderUrl = await createClientFolder(lead.name || 'Cliente');
+          if (folderUrl) {
+            await supabase.from('leads').update({ drive_folder_url: folderUrl }).eq('id', lead.id);
+            console.log('[webhook-payment] Pasta criada:', folderUrl);
+          }
+        }
+      } catch (driveError) {
+        console.error('[webhook-payment] Erro ao criar pasta no Drive:', driveError);
+        // Não interrompe o fluxo se o Drive falhar
       }
+      
+      try {
+        console.log('[webhook-payment] Enviando WhatsApp...');
+        const msg = 
+          `🎉 *Pagamento Confirmado!* Parabéns pela sua decisão.\n\n` +
+          `Agora vamos começar a preparar a sua *Sessão Individual*. Aqui estão os seus próximos passos:\n\n` +
+          `1️⃣ *Preencha o Formulário de Protocolo:* ${lead.products?.form_link || 'Link pendente'}?id=${lead.id}\n\n` +
+          `2️⃣ *Suba seus documentos na sua pasta exclusiva:* ${folderUrl || 'Erro ao criar pasta'}\n\n` +
+          `Assim que você preencher o formulário e subir os documentos, eu vou analisar tudo para a nossa sessão. Até logo!`;
 
-      // Enviar links via WhatsApp
-      const msg = 
-        `🎉 *Pagamento Confirmado!* Parabéns pela sua decisão.\n\n` +
-        `Agora vamos começar a preparar a sua *Sessão Individual*. Aqui estão os seus próximos passos:\n\n` +
-        `1️⃣ *Preencha o Formulário de Protocolo:* ${lead.products?.form_link || 'Link pendente'}?id=${lead.id}\n\n` +
-        `2️⃣ *Suba seus documentos na sua pasta exclusiva:* ${folderUrl || 'Erro ao criar pasta'}\n\n` +
-        `Assim que você preencher o formulário e subir os documentos, eu vou analisar tudo para a nossa sessão. Até logo!`;
-
-      await sendWhatsApp(lead.phone, msg);
+        await sendWhatsApp(lead.phone, msg);
+        console.log('[webhook-payment] WhatsApp enviado para:', lead.phone);
+      } catch (wsError) {
+        console.error('[webhook-payment] Erro ao enviar WhatsApp:', wsError);
+      }
     }
 
     return Response.json({ success: true });
