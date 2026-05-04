@@ -247,6 +247,7 @@ export async function generateAgentReply(
   if (product) {
     if (product.id === 'sessao_individual') {
       product.name = 'Protocolo Dinheiro na Mesa';
+      product.price_text = 'R$ 500,00';
       if (!product.payment_link || product.payment_link.includes('stripe.com/test_example')) {
         product.payment_link = 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=2631945277-b12d9ad4-02ec-486f-b02c-51da79714b61';
       }
@@ -278,7 +279,7 @@ export async function generateAgentReply(
     ...(product || {}),
     id: productId,
     name: product?.name || 'Protocolo Dinheiro na Mesa',
-    price_text: product?.price_text || 'R$ 500',
+    price_text: product?.price_text || 'R$ 500,00',
     payment_link: finalPaymentLink
   } as any);
   
