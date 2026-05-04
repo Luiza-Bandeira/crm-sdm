@@ -34,7 +34,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { nome_completo, telefone_whatsapp, canal_origem, product_id } = body;
+    const { nome_completo, telefone_whatsapp, email, canal_origem, product_id } = body;
 
     const productId = product_id || 'sessao_individual';
     console.log(`[webhook-lead] Recebido product_id: "${product_id}" | Usando: "${productId}" | Nome: ${nome_completo}`);
@@ -64,6 +64,7 @@ serve(async (req) => {
       await supabase.from('leads').update({
         name:       nome_completo || existing.name,
         source:     canal_origem || 'landing_page',
+        email:      email || existing.email,
         product_id: productId, // Atualiza para o interesse mais recente
       }).eq('id', leadId);
 
@@ -84,6 +85,7 @@ serve(async (req) => {
         .insert({
           name:       nome_completo,
           phone,
+          email,
           source:     canal_origem || 'landing_page',
           stage_id:   STAGES.NOVO_LEAD,
           product_id: productId,

@@ -45,7 +45,9 @@ serve(async (req) => {
       const mpData = await mpRes.json();
       
       isApproved = (mpData.status === 'approved');
-      leadId = mpData.external_reference; // Usamos external_reference para o ID do lead
+      leadId = mpData.external_reference; 
+      // Adiciona o e-mail do pagador ao corpo para o processamento unificado abaixo
+      if (mpData.payer?.email) body.payer_email = mpData.payer.email;
     } 
     // ── Lógica STRIPE (Fallback) ───────────────────────────
     else {
@@ -77,9 +79,12 @@ serve(async (req) => {
     }
 
     // 2. Atualiza status de pagamento
+    const payerEmail = body.payer_email || body.data?.object?.customer_details?.email || lead.email;
+    
     await supabase.from('leads').update({
       stage_id: STAGES.GANHO,
       payment_id: paymentId,
+      email: payerEmail,
       metadata: { ...lead.metadata, paid: true, paid_at: new Date().toISOString() }
     }).eq('id', lead.id);
 
