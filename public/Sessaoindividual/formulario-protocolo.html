@@ -565,14 +565,6 @@ async function colarLink() {
   catch(e) { document.getElementById('driveLink').focus(); }
 }
 
-document.getElementById('mainForm').addEventListener('submit', async function(e) {
-  e.preventDefault();
-  
-  const submitBtn = this.querySelector('.submit-btn');
-  const originalText = submitBtn.textContent;
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Enviando...';
-
   // Lógica de Validação de Acesso
   const btnValidate = document.getElementById('btnValidate');
   const accessEmail = document.getElementById('accessEmail');
@@ -605,7 +597,9 @@ document.getElementById('mainForm').addEventListener('submit', async function(e)
           document.getElementById('driveLink').value = data.drive_folder_url;
         }
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        updateProgress();
       } else {
+        accessError.textContent = data.error || 'E-mail não encontrado ou pagamento pendente.';
         accessError.style.display = 'block';
       }
     } catch (err) {
@@ -616,6 +610,19 @@ document.getElementById('mainForm').addEventListener('submit', async function(e)
       btnValidate.textContent = 'Validar E-mail';
     }
   });
+
+  document.getElementById('mainForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    if (!currentLeadId) {
+      alert('Por favor, valide seu acesso primeiro.');
+      return;
+    }
+
+    const submitBtn = this.querySelector('.submit-btn');
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Enviando...';
 
   // Captura o lead_id da URL (opcional se já tiver o e-mail)
   const urlParams = new URLSearchParams(window.location.search);

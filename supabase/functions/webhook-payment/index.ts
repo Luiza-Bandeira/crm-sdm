@@ -97,7 +97,7 @@ serve(async (req) => {
       let folderUrl = lead.drive_folder_url;
       
       try {
-        if (!folderUrl) {
+        if (!folderUrl || folderUrl.includes('undefined')) {
           console.log('[webhook-payment] Criando pasta no Drive...');
           folderUrl = await createClientFolder(lead.name || 'Cliente');
           if (folderUrl) {

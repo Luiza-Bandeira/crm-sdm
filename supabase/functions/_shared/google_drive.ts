@@ -94,5 +94,6 @@ export async function createClientFolder(clientName: string) {
     }),
   });
 
+  if (!folder.id) return null;
   return `https://drive.google.com/drive/folders/${folder.id}`;
 }
