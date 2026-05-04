@@ -97,3 +97,29 @@ export async function createClientFolder(clientName: string) {
   if (!folder.id) return null;
   return `https://drive.google.com/drive/folders/${folder.id}`;
 }
+
+export async function uploadFile(folderId: string, fileName: string, content: string, mimeType = 'text/html') {
+  const token = await getAccessToken();
+  if (!token) return null;
+
+  // 1. Metadata do arquivo
+  const metadata = {
+    name: fileName,
+    parents: [folderId],
+  };
+
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+  form.append('file', new Blob([content], { type: mimeType }));
+
+  const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+    method: 'POST',
+    headers: {
+      Authorization: Bearer ,
+    },
+    body: form,
+  });
+
+  const file = await res.json();
+  return file.id ? https://drive.google.com/open?id= : null;
+}

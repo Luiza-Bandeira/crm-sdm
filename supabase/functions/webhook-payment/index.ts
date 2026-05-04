@@ -115,7 +115,8 @@ serve(async (req) => {
         const msg = 
           `🎉 *Pagamento Confirmado!* Parabéns pela sua decisão.\n\n` +
           `Agora vamos começar a preparar a sua *Sessão Individual*. Aqui estão os seus próximos passos:\n\n` +
-          `1️⃣ *Preencha o Formulário de Protocolo:* ${lead.products?.form_link || 'Link pendente'}?id=${lead.id}\n\n` +
+          `1️⃣ *Preencha o Formulário de Protocolo:* ${lead.products?.form_link || 'Link pendente'}?id=${lead.id}\n` +
+          `*(Para acessar, use o e-mail: ${payerEmail})*\n\n` +
           `2️⃣ *Suba seus documentos na sua pasta exclusiva:* ${folderUrl || 'Erro ao criar pasta'}\n\n` +
           `Assim que você preencher o formulário e subir os documentos, eu vou analisar tudo para a nossa sessão. Até logo!`;
 

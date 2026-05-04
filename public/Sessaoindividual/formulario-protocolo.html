@@ -636,7 +636,7 @@ async function colarLink() {
   const answers = {};
   
   // Bancos e Cartões (tags selecionadas)
-  const bancos = Array.from(document.querySelectorAll('#outrosBancos - anterior .bank-tag.selected')).map(t => t.textContent);
+  const bancos = Array.from(document.querySelectorAll('.bank-tag.selected')).map(t => t.textContent);
   // Nota: Simplificando a captura para este exemplo
   formData.forEach((value, key) => {
     if (key.includes('[]')) {
