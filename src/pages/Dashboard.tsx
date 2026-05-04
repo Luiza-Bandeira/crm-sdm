@@ -37,7 +37,7 @@ export default function Dashboard() {
 
     const [{ data: stagesData }, { data: leadsData }] = await Promise.all([
       supabase.from('pipeline_stages').select('*').order('order_index'),
-      supabase.from('crm_leads_view').select('*').order('created_at', { ascending: false }),
+      supabase.from('leads').select('*, agent_state(*)').order('created_at', { ascending: false }),
     ])
 
     if (stagesData) setStages(stagesData as PipelineStage[])
