@@ -19,24 +19,6 @@ export interface PipelineStage {
   color: string;
 }
 
-export interface Lead {
-  id: string;
-  name?: string;
-  phone: string;
-  email?: string;
-  source?: string;
-  stage_id: number;
-  score: number;
-  notes?: string;
-  created_at: string;
-  updated_at: string;
-  stage_name?: string;
-  stage_color?: string;
-  spin_phase?: string;
-  last_message_at?: string;
-  follow_up_count?: number;
-  message_count?: number;
-}
 
 export interface Conversation {
   id: string;
@@ -88,4 +70,6 @@ export interface Lead {
   follow_up_count?: number;
   message_count?: number;
   agent_state?: AgentState[];
+  metadata?: any;
+  drive_folder_url?: string;
 }
