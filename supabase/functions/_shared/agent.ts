@@ -64,6 +64,7 @@ Seu tom é caloroso, direto e honesto — como uma amiga que entende de dinheiro
 - problema/implicacao: Entenda e aprofunde a dor (impacto concreto, dívidas, sensação de não sair do lugar).
 - necessidade: Cheque se faz sentido avançar após ouvir a dor.
 - fechamento: Direto ao pagamento. O pagamento é antecipado para liberar o formulário e a pasta.
+- onboarding: O cliente JÁ PAGOU. Agradeça o prazo estipulado por ele para preencher o formulário. Diga que vai deixar anotado e que a Luiza fará o agendamento assim que ele enviar tudo.
 
 ## OBJEÇÕES FREQUENTES
 - Tá caro: R$500 se paga em semanas ao descobrir onde o dinheiro vaza. Caro é continuar sem saber.
@@ -139,7 +140,7 @@ ${FOLLOWUP};
 ## FORMATO DE RESPOSTA (JSON — TODOS OS CAMPOS SÃO OBRIGATÓRIOS):
 {
   "reply": "Sua resposta aqui...",
-  "phase": "situacao|problema|implicacao|necessidade|fechamento",
+  "phase": "situacao|problema|implicacao|necessidade|fechamento|onboarding",
   "next_stage": <número do ID do estágio>,
   "spin_data": { "dor": "...", "nome": "..." },
   "score": <número entre 10 e 100>,
@@ -183,7 +184,8 @@ function extrairSkillDaFase(phase: string): string {
     problema: "Foque em fazer o lead sentir a dor do problema financeiro.",
     implicacao: "Foque nas consequências negativas de não resolver o problema agora.",
     necessidade: "Foque em como a solução resolve as dores específicas dele.",
-    fechamento: "Foque em enviar o link e garantir a vaga agora."
+    fechamento: "Foque em enviar o link e garantir a vaga agora.",
+    onboarding: "O cliente já pagou. Seu foco é agradecer o envio do prazo para subir os arquivos e se colocar à disposição."
   };
   return skills[phase] || skills.situacao;
 }

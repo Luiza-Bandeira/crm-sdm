@@ -88,6 +88,10 @@ serve(async (req) => {
       metadata: { ...lead.metadata, paid: true, paid_at: new Date().toISOString() }
     }).eq('id', lead.id);
 
+    await supabase.from('agent_state')
+      .update({ spin_phase: 'onboarding' })
+      .eq('lead_id', lead.id);
+
     await logActivity(lead.id, 'stage_change', 'Pagamento confirmado! Iniciando onboarding.', lead.stage_id, STAGES.GANHO);
 
     // 3. Automação específica por produto
@@ -118,7 +122,8 @@ serve(async (req) => {
           `1️⃣ *Preencha o Formulário de Protocolo:* ${lead.products?.form_link || 'Link pendente'}?id=${lead.id}\n` +
           `*(Para acessar, use o e-mail: ${payerEmail})*\n\n` +
           `2️⃣ *Suba seus documentos na sua pasta exclusiva:* ${folderUrl || 'Erro ao criar pasta'}\n\n` +
-          `Assim que você preencher o formulário e subir os documentos, eu vou analisar tudo para a nossa sessão. Até logo!`;
+          `Assim que você preencher o formulário e subir os documentos, a Luiza vai analisar tudo para a nossa sessão.\n\n` +
+          `Para a gente se organizar por aqui, **qual seria uma data limite realista para você conseguir preencher e subir os arquivos?** Me avise para eu deixar anotado!`;
 
         await sendWhatsApp(lead.phone, msg);
         console.log('[webhook-payment] WhatsApp enviado para:', lead.phone);
