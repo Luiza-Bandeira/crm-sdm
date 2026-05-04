@@ -24,7 +24,7 @@ async function getAccessToken() {
     { alg: "RS256", typ: "JWT" },
     {
       iss: serviceAccount.client_email,
-      scope: "https://www.googleapis.com/auth/drive.file",
+      scope: "https://www.googleapis.com/auth/drive",
       aud: "https://oauth2.googleapis.com/token",
       exp: now + 3600,
       iat: now,
@@ -102,24 +102,38 @@ export async function uploadFile(folderId: string, fileName: string, content: st
   const token = await getAccessToken();
   if (!token) return null;
 
-  // 1. Metadata do arquivo
+  const boundary = '-------314159265358979323846';
+  const delimiter = "\r\n--" + boundary + "\r\n";
+  const close_delim = "\r\n--" + boundary + "--";
+
   const metadata = {
     name: fileName,
     parents: [folderId],
   };
+  console.log('[google-drive] Iniciando upload:', fileName, 'na pasta:', folderId);
 
-  const form = new FormData();
-  form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-  form.append('file', new Blob([content], { type: mimeType }));
+  const multipartRequestBody =
+    delimiter +
+    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+    JSON.stringify(metadata) +
+    delimiter +
+    'Content-Type: ' + mimeType + '\r\n\r\n' +
+    content +
+    close_delim;
 
   const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
+      'Content-Type': 'multipart/related; boundary=' + boundary,
     },
-    body: form,
+    body: multipartRequestBody,
   });
 
   const file = await res.json();
+  if (file.error) {
+    console.error('[google-drive] Erro upload:', file.error);
+    return null;
+  }
   return file.id ? `https://drive.google.com/open?id=${file.id}` : null;
 }

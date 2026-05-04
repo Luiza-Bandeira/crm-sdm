@@ -24,7 +24,7 @@ serve(async (req) => {
     // 1. Busca dados do lead (precisamos do drive_folder_url e nome)
     const { data: lead } = await supabase
       .from('leads')
-      .select('name, drive_folder_url, metadata')
+      .select('name, drive_folder_url, metadata, notes')
       .eq('id', lead_id)
       .single();
 
@@ -33,6 +33,7 @@ serve(async (req) => {
       // Extrai ID da pasta da URL: https://drive.google.com/drive/folders/ID
       const folderId = lead.drive_folder_url.split('/').pop();
       
+      console.log('[submit-protocol] Folder ID extraído:', folderId);
       if (folderId && folderId !== 'undefined') {
         const timestamp = new Date().toLocaleDateString('pt-BR');
         const fileName = `Respostas Protocolo - ${lead.name} - ${timestamp}.html`;
