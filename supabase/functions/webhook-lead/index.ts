@@ -134,38 +134,13 @@ async function triggerFirstMessage(leadId: string, phone: string, productId: str
   const { data: product } = await supabase.from('products').select('*').eq('id', productId).maybeSingle();
   const productName = product?.name || 'Protocolo de Clareza Financeira';
   
-  // 2. GERA LINK DE PAGAMENTO DINÂMICO (Mercado Pago)
-  let paymentLink = product?.payment_link;
-  const mpToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN');
-
-  if (mpToken && productId === 'sessao_individual') {
-    try {
-      const mpRes = await fetch('https://api.mercadopago.com/checkout/preferences', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${mpToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          items: [{
-            title: productName,
-            quantity: 1,
-            unit_price: 500.00,
-            currency_id: 'BRL'
-          }],
-          external_reference: leadId, // CRITICAL: Vincula o pagamento ao Lead
-          back_urls: {
-            success: `https://crm-sdm.vercel.app/Sessaoindividual/formulario-protocolo.html?id=${leadId}`
-          },
-          auto_return: 'approved',
-          notification_url: 'https://ekyisfmxmxcwtgdwvfen.supabase.co/functions/v1/webhook-payment'
-        })
-      });
-      const mpData = await mpRes.json();
-      if (mpData.init_point) paymentLink = mpData.init_point;
-    } catch (err) {
-      console.error('[webhook-lead] Erro ao gerar link MP:', err);
-    }
+  // 2. USA O LINK DE PAGAMENTO CADASTRADO NO PRODUTO
+  let paymentLink = product?.payment_link || '';
+  
+  // Tenta anexar o external_reference para manter a automação funcionando
+  if (paymentLink && paymentLink.includes('mercadopago') && !paymentLink.includes('external_reference')) {
+    const separator = paymentLink.includes('?') ? '&' : '?';
+    paymentLink = `${paymentLink}${separator}external_reference=${leadId}`;
   }
 
   let msg = '';

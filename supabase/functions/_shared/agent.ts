@@ -100,8 +100,8 @@ function buildSystemPrompt(state: AgentState, lead: Lead, availabilitySlots: any
 ## PRODUTO ATUAL NO CONTEXTO
 - Nome: ${product.name}
 - Preço/Condições: ${product.price_text}
-- Link de Inscrição: ${product.payment_link}${product.payment_link.includes('?') ? '&' : '?'}client_reference_id=${lead.id}
-(IMPORTANTE: Sempre envie este link exatamente como está, garantindo que haja um espaço antes e depois dele na mensagem)
+- Link de Inscrição: ${product.payment_link}
+(IMPORTANTE: Sempre envie este link exatamente como está. Se o link for do Mercado Pago, você pode anexar &external_reference=${lead.id} ao final se ele já tiver um ?, ou ?external_reference=${lead.id} se não tiver, para que o sistema identifique o pagamento automaticamente. GARANTA um espaço antes e depois do link na mensagem).
 `;
 
   // Gera os próximos slots disponíveis a partir de hoje
