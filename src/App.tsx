@@ -8,7 +8,18 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/" element={<Navigate to="/crm" replace />} />
+      <Route 
+        path="/" 
+        element={
+          <div style={{ padding: '20px', textAlign: 'center', fontFamily: 'sans-serif' }}>
+            Redirecionando para a página oficial...
+            {(() => {
+              window.location.href = '/Sessaoindividual/protocolo-dinheiro-na-mesa.html';
+              return null;
+            })()}
+          </div>
+        } 
+      />
       <Route 
         path="/crm" 
         element={
