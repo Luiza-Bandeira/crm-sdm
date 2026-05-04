@@ -36,7 +36,8 @@ serve(async (req) => {
     const body = await req.json();
     const { nome_completo, telefone_whatsapp, canal_origem, product_id } = body;
 
-    const productId = product_id || 'programa_completo';
+    const productId = product_id || 'sessao_individual';
+    console.log(`[webhook-lead] Recebido product_id: "${product_id}" | Usando: "${productId}" | Nome: ${nome_completo}`);
 
     // Validação
     if (!telefone_whatsapp) {

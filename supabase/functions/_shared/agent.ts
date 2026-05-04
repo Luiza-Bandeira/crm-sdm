@@ -230,21 +230,28 @@ export async function generateAgentReply(
   lead: Lead & { notes?: string; product_id?: string }
 ): Promise<AgentResult> {
   // 1. Busca detalhes do produto
-  const productId = lead.product_id || 'programa_completo';
+  const productId = lead.product_id || 'sessao_individual'; // Default alterado para sessao_individual para segurança
+  console.log(`[generateAgentReply] Lead ID: ${lead.id}, ProductID: ${productId}`);
+
   const { data: product } = await supabase
     .from('products')
     .select('*')
     .eq('id', productId)
-    .single();
+    .maybeSingle();
+
+  if (!product) {
+    console.error(`[generateAgentReply] CRITICAL: Product not found for ID: ${productId}`);
+  }
 
   // 2. Busca horários disponíveis
   const { data: slots } = await supabase.from('availability_slots').select('*');
   
   const systemPrompt = buildSystemPrompt(state, lead, slots || [], product || {
-    name: 'Programa Seu Dinheiro na Mesa',
-    description: 'Consultoria e educação financeira',
-    price_text: 'Consulte condições',
-    payment_link: 'https://pay.hotmart.com/I104619180M'
+    id: 'unknown',
+    name: 'Consultoria Financeira',
+    description: 'Apoio especializado para suas finanças',
+    price_text: 'Consulte nossa equipe',
+    payment_link: '#'
   });
   
   const messages = [
