@@ -2,10 +2,11 @@
   "cleanUrls": true,
   "rewrites": [
     { "source": "/Sessaoindividual/:path*", "destination": "/Sessaoindividual/:path*" },
-    { "source": "/protocolo/:id", "destination": "/index.html" },
+    { "source": "/login", "destination": "/index.html" },
+    { "source": "/leads", "destination": "/index.html" },
     { "source": "/crm", "destination": "/index.html" },
     { "source": "/crm/:path*", "destination": "/index.html" },
-    { "source": "/login", "destination": "/index.html" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/configuracao", "destination": "/index.html" },
+    { "source": "/", "destination": "/index.html" }
   ]
 }

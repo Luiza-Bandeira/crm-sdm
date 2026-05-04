@@ -44,20 +44,19 @@ serve(async (req) => {
       const folderId = folderUrl.match(/folders\/([^/?]+)/)?.[1];
       if (folderId) {
         const timestamp = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
-        const fileName = `Respostas Protocolo - ${lead.name} - ${timestamp}.html`;
+        const fileName = `RESPOSTAS_PROTOCOLO_${lead.name}_${timestamp}.txt`;
         
-        let htmlContent = `<html><body style="font-family: sans-serif; padding: 40px; line-height: 1.6;">`;
-        htmlContent += `<h1 style="color: #e8557a;">Protocolo Dinheiro na Mesa</h1>`;
-        htmlContent += `<h2>Diagnóstico de ${lead.name}</h2>`;
-        htmlContent += `<p>Data: ${new Date().toLocaleString('pt-BR')}</p><hr/>`;
+        let textContent = `PROTOCOLO DINHEIRO NA MESA\n`;
+        textContent += `Diagnóstico de: ${lead.name}\n`;
+        textContent += `Data: ${new Date().toLocaleString('pt-BR')}\n`;
+        textContent += `------------------------------------------\n\n`;
         
         for (const [key, value] of Object.entries(answers)) {
-          htmlContent += `<p><strong>${key}:</strong> ${Array.isArray(value) ? value.join(', ') : value}</p>`;
+          textContent += `${key.toUpperCase()}: ${Array.isArray(value) ? value.join(', ') : value}\n`;
         }
-        htmlContent += `</body></html>`;
 
         const { uploadFile } = await import('../_shared/google_drive.ts');
-        driveLink = await uploadFile(folderId, fileName, htmlContent);
+        driveLink = await uploadFile(folderId, fileName, textContent, 'text/plain');
       }
     }
 
