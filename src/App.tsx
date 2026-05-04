@@ -11,18 +11,6 @@ export default function App() {
       <Route 
         path="/" 
         element={
-          <div style={{ padding: '20px', textAlign: 'center', fontFamily: 'sans-serif' }}>
-            Redirecionando para a página oficial...
-            {(() => {
-              window.location.href = '/Sessaoindividual/protocolo-dinheiro-na-mesa';
-              return null;
-            })()}
-          </div>
-        } 
-      />
-      <Route 
-        path="/crm" 
-        element={
           <AuthGuard>
             <Dashboard />
           </AuthGuard>
