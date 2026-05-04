@@ -115,11 +115,11 @@ export async function uploadFile(folderId: string, fileName: string, content: st
   const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
     method: 'POST',
     headers: {
-      Authorization: Bearer ,
+      Authorization: `Bearer ${token}`,
     },
     body: form,
   });
 
   const file = await res.json();
-  return file.id ? https://drive.google.com/open?id= : null;
+  return file.id ? `https://drive.google.com/open?id=${file.id}` : null;
 }

@@ -218,6 +218,16 @@ select option { background: #162540; color: var(--cream); }
     </div>
   </div>
 
+  <div class="step-card">
+    <div class="q-meta"><div class="q-num">4</div><div class="q-cat">Patrimônio</div></div>
+    <div class="q-label">Você possui carro?</div>
+    <div class="q-hint">Isso nos ajuda a calcular custos de manutenção, impostos e seguros.</div>
+    <div class="pill-group">
+      <input class="pill-option" type="radio" name="possui_carro" value="sim" id="car1"><label class="pill-label" for="car1">Sim, possuo</label>
+      <input class="pill-option" type="radio" name="possui_carro" value="nao" id="car2"><label class="pill-label" for="car2">Não possuo</label>
+    </div>
+  </div>
+
 </div>
 
 <!-- ── BLOCO 2 · FINANCEIRO ── -->
@@ -231,7 +241,7 @@ select option { background: #162540; color: var(--cream); }
 <div class="form-wrap">
 
   <div class="step-card">
-    <div class="q-meta"><div class="q-num">4</div><div class="q-cat">Renda</div></div>
+    <div class="q-meta"><div class="q-num">5</div><div class="q-cat">Renda</div></div>
     <div class="q-label">Quanto você ganha por mês, em média?</div>
     <div class="q-hint">Some tudo que entra — salário, freelas, aluguéis, pensão, etc.</div>
     <div class="grid2">
@@ -251,7 +261,7 @@ select option { background: #162540; color: var(--cream); }
   </div>
 
   <div class="step-card">
-    <div class="q-meta"><div class="q-num">5</div><div class="q-cat">Reserva</div></div>
+    <div class="q-meta"><div class="q-num">6</div><div class="q-cat">Reserva</div></div>
     <div class="q-label">Quanto você tem guardado hoje?</div>
     <div class="q-hint">Some poupança, conta corrente e investimentos.</div>
     <div class="prefix-input" style="margin-bottom:1rem;">
@@ -268,7 +278,7 @@ select option { background: #162540; color: var(--cream); }
   </div>
 
   <div class="step-card">
-    <div class="q-meta"><div class="q-num">6</div><div class="q-cat">Comportamento</div></div>
+    <div class="q-meta"><div class="q-num">7</div><div class="q-cat">Comportamento</div></div>
     <div class="q-label">Sobra dinheiro no fim do mês?</div>
     <div class="pill-group col">
       <input class="pill-option" type="radio" name="sobra" value="sempre" id="s1"><label class="pill-label" for="s1">Sim, sempre sobra</label>
@@ -280,7 +290,7 @@ select option { background: #162540; color: var(--cream); }
   </div>
 
   <div class="step-card">
-    <div class="q-meta"><div class="q-num">7</div><div class="q-cat">Dívidas</div></div>
+    <div class="q-meta"><div class="q-num">8</div><div class="q-cat">Dívidas</div></div>
     <div class="q-label">Você tem dívidas hoje?</div>
     <div class="q-hint">Cartão no rotativo, empréstimos, financiamentos, parcelamentos pesados.</div>
     <div class="pill-group" style="margin-bottom:0.75rem;">
@@ -314,7 +324,7 @@ select option { background: #162540; color: var(--cream); }
 <div class="form-wrap">
 
   <div class="step-card">
-    <div class="q-meta"><div class="q-num">8</div><div class="q-cat">Bancos</div></div>
+    <div class="q-meta"><div class="q-num">9</div><div class="q-cat">Bancos</div></div>
     <div class="q-label">Em quais bancos você tem conta?</div>
     <div class="q-hint">Selecione todos — conta corrente, salário, digital. Precisarei dos extratos desses bancos.</div>
     <div class="tag-grid">
@@ -338,7 +348,7 @@ select option { background: #162540; color: var(--cream); }
   </div>
 
   <div class="step-card">
-    <div class="q-meta"><div class="q-num">9</div><div class="q-cat">Cartões de crédito</div></div>
+    <div class="q-meta"><div class="q-num">10</div><div class="q-cat">Cartões de crédito</div></div>
     <div class="q-label">Quais cartões de crédito você usa?</div>
     <div class="q-hint">Selecione todos que usa com frequência — precisarei das faturas dos últimos 2 a 3 meses.</div>
     <div class="tag-grid" style="margin-bottom:1rem;">
@@ -390,7 +400,7 @@ select option { background: #162540; color: var(--cream); }
 <div class="form-wrap">
 
   <div class="step-card">
-    <div class="q-meta"><div class="q-num">10</div><div class="q-cat">Dificuldades</div></div>
+    <div class="q-meta"><div class="q-num">11</div><div class="q-cat">Dificuldades</div></div>
     <div class="q-label">Qual é sua maior dificuldade financeira hoje?</div>
     <div class="q-hint">Quanto mais detalhe, mais assertiva será a análise. Sem julgamento aqui.</div>
     <textarea name="dificuldade" id="tf1" placeholder="Ex: Não consigo guardar dinheiro, o cartão sempre estoura, não sei para onde vai minha renda..." oninput="counter(this,'c1',500)"></textarea>
@@ -398,7 +408,7 @@ select option { background: #162540; color: var(--cream); }
   </div>
 
   <div class="step-card">
-    <div class="q-meta"><div class="q-num">11</div><div class="q-cat">Histórico</div></div>
+    <div class="q-meta"><div class="q-num">12</div><div class="q-cat">Histórico</div></div>
     <div class="q-label">O que você já tentou e não funcionou?</div>
     <div class="q-hint">Isso me ajuda a não propor o que você já sabe que não funciona pra você.</div>
     <div class="pill-group" style="margin-bottom:0.85rem;">
@@ -414,7 +424,7 @@ select option { background: #162540; color: var(--cream); }
   </div>
 
   <div class="step-card">
-    <div class="q-meta"><div class="q-num">12</div><div class="q-cat">Objetivo</div></div>
+    <div class="q-meta"><div class="q-num">13</div><div class="q-cat">Objetivo</div></div>
     <div class="q-label">O que você quer sair sabendo depois da sessão?</div>
     <div class="q-hint">Qual seria o resultado concreto mais valioso pra você?</div>
     <textarea name="expectativa" id="tf3" placeholder="Ex: Quero entender onde estou errando e ter um plano claro para começar a guardar..." oninput="counter(this,'c3',400)"></textarea>
@@ -439,14 +449,21 @@ select option { background: #162540; color: var(--cream); }
       <div class="doc-icon"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
       <div class="doc-text">
         <strong>Extratos bancários</strong>
-        <span>Últimos 2–3 meses de todos os bancos que você marcou acima. PDF ou print da tela — o que for mais fácil.</span>
+        <span>Extrato bancário dos últimos 90 dias de todos os bancos que você marcou acima. PDF ou print da tela — o que for mais fácil.</span>
       </div>
     </div>
     <div class="doc-item">
       <div class="doc-icon"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
       <div class="doc-text">
         <strong>Faturas dos cartões</strong>
-        <span>Últimas 2–3 faturas de cada cartão. PDF da fatura completa ou extrato detalhado.</span>
+        <span>Faturas dos últimos 3 meses de TODOS os cartões que você usa. PDF da fatura completa ou extrato detalhado.</span>
+      </div>
+    </div>
+    <div class="doc-item">
+      <div class="doc-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+      <div class="doc-text">
+        <strong>Impostos e Fixos Mensais</strong>
+        <span>IPTU, IPVA (se houver), e últimas contas de luz, água, internet, aluguel, financiamento e todas as despesas pagas mensalmente que não estão no cartão de crédito.</span>
       </div>
     </div>
     <div class="doc-item">
