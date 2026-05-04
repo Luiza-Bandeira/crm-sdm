@@ -14,7 +14,7 @@ export default function App() {
           <div style={{ padding: '20px', textAlign: 'center', fontFamily: 'sans-serif' }}>
             Redirecionando para a página oficial...
             {(() => {
-              window.location.href = '/Sessaoindividual/protocolo-dinheiro-na-mesa.html';
+              window.location.href = '/Sessaoindividual/protocolo-dinheiro-na-mesa';
               return null;
             })()}
           </div>
