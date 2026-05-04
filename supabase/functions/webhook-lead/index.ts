@@ -133,7 +133,7 @@ async function triggerFirstMessage(leadId: string, phone: string, productId: str
 
   // 1. Busca dados do produto
   const { data: product } = await supabase.from('products').select('*').eq('id', productId).maybeSingle();
-  const productName = product?.name || 'Protocolo de Clareza Financeira';
+  const productName = product?.name || 'Dinheiro na Mesa';
   
   // 2. USA O LINK DE PAGAMENTO CADASTRADO NO PRODUTO
   let paymentLink = product?.payment_link || '';
@@ -146,10 +146,10 @@ async function triggerFirstMessage(leadId: string, phone: string, productId: str
 
   let msg = '';
   if (productId === 'sessao_individual') {
-    msg = `${saudacao} Vi que você se interessou pelo *Protocolo de Clareza Financeira*. Fico muito feliz!\n\n` +
+    msg = `${saudacao} Vi que você se interessou pelo *Dinheiro na Mesa*. Fico muito feliz!\n\n` +
           `Para te ajudar da melhor forma nessa consultoria 1 a 1, preciso entender o que te trouxe até aqui hoje.\n\n` +
           `Como está a sua vida financeira no momento? Você sente que tem controle total ou está buscando organizar as contas primeiro?\n\n` +
-          `*(Ah, se você já quiser garantir sua vaga agora, aqui está o seu link pessoal de inscrição: ${paymentLink} )*`;
+          `Ah, se você já quiser garantir sua vaga agora, aqui está o seu link pessoal de inscrição:\n\n${paymentLink}`;
   } else {
     msg = `${saudacao} Vi que você se interessou pelo *${productName}*. Fico feliz que chegou até aqui!\n\n` +
           `Antes de te contar tudo sobre o programa, quero entender melhor a sua situação.\n\n` +

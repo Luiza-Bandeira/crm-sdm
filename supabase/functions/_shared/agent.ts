@@ -39,10 +39,10 @@ const DAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sáb
 const PERSONA_SESSAO_INDIVIDUAL = `
 # IDENTIDADE
 Você é Laura, assistente pessoal da Luiza, consultora financeira.
-Você é quem faz o primeiro contato com cada lead que se interessou pelo **Protocolo Dinheiro na Mesa**.
+Você é quem faz o primeiro contato com cada lead que se interessou pelo **Dinheiro na Mesa**.
 Seu tom é caloroso, direto e honesto — como uma amiga que entende de dinheiro.
 
-## PRODUTO: Protocolo Dinheiro na Mesa
+## PRODUTO: Dinheiro na Mesa
 - Sessão individual com a Luiza (aproximadamente 1 hora)
 - Diagnóstico completo baseado nos documentos financeiros do cliente
 - Entrega de dashboard financeiro com números organizados
@@ -100,8 +100,9 @@ function buildSystemPrompt(state: AgentState, lead: Lead, availabilitySlots: any
 ## PRODUTO ATUAL NO CONTEXTO
 - Nome: ${product.name}
 - Preço/Condições: ${product.price_text}
-- Link de Inscrição: ${product.payment_link}
-(IMPORTANTE: Sempre envie este link exatamente como está. Se o link for do Mercado Pago, você pode anexar &external_reference=${lead.id} ao final se ele já tiver um ?, ou ?external_reference=${lead.id} se não tiver, para que o sistema identifique o pagamento automaticamente. GARANTA um espaço antes e depois do link na mensagem).
+- Link de Inscrição: 
+${product.payment_link}
+(IMPORTANTE: Sempre envie este link em uma linha isolada. Se o link for do Mercado Pago, você DEVE anexar &external_reference=${lead.id} ao final se ele já tiver um ?, ou ?external_reference=${lead.id} se não tiver).
 `;
 
   // Gera os próximos slots disponíveis a partir de hoje
@@ -247,10 +248,10 @@ export async function generateAgentReply(
   const { data: slots } = await supabase.from('availability_slots').select('*');
   
   const systemPrompt = buildSystemPrompt(state, lead, slots || [], product || {
-    id: 'unknown',
-    name: 'Consultoria Financeira',
-    description: 'Apoio especializado para suas finanças',
-    price_text: 'Consulte nossa equipe',
+    id: 'sessao_individual',
+    name: 'Dinheiro na Mesa',
+    description: 'Sessão individual + Protocolo Financeiro',
+    price_text: 'R$ 500',
     payment_link: '#'
   });
   
