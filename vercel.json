@@ -1,11 +1,7 @@
 {
   "cleanUrls": true,
-  "redirects": [
-    { "source": "/", "destination": "/crm", "permanent": true }
-  ],
   "rewrites": [
     { "source": "/Sessaoindividual/(.*)", "destination": "/Sessaoindividual/$1" },
-    { "source": "/crm/(.*)", "destination": "/index.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
