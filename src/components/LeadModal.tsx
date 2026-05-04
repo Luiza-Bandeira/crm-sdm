@@ -212,6 +212,24 @@ export default function LeadModal({ lead, stages, onClose, onUpdate, onDelete }:
                 <div className="meta-item"><span className="meta-label">Mensagens</span><span className="meta-value">{lead.follow_up_count || 0}</span></div>
                 <div className="meta-item"><span className="meta-label">Criado em</span><span className="meta-value">{timeFormat(lead.created_at)}</span></div>
               </div>
+
+              {lead.metadata?.form_submitted && lead.metadata?.answers && (
+                <div className="field-group" style={{ marginTop: '4px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--green)' }}>
+                    <FileText size={13} /> Protocolo Preenchido · {lead.metadata.form_at ? new Date(lead.metadata.form_at).toLocaleString('pt-BR') : ''}
+                  </label>
+                  <div style={{ background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+                    {Object.entries(lead.metadata.answers)
+                      .filter(([, v]) => v && (Array.isArray(v) ? (v as any[]).some(Boolean) : String(v).trim()))
+                      .map(([key, value]) => (
+                        <div key={key} style={{ display: 'flex', gap: '8px', padding: '8px 12px', borderBottom: '1px solid var(--border)', fontSize: '12px' }}>
+                          <span style={{ color: 'var(--text-muted)', minWidth: '120px', fontWeight: 600 }}>{key.replace(/_/g, ' ').replace(/\[\]/g, '')}</span>
+                          <span style={{ color: 'var(--text-primary)' }}>{Array.isArray(value) ? (value as any[]).filter(Boolean).join(', ') : String(value)}</span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
